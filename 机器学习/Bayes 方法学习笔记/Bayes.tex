@@ -1,0 +1,187 @@
+%!TEX program = xelatex
+\documentclass[a4paper,UTF8]{ctexart}
+\usepackage[unicode=true,colorlinks,urlcolor=blue,linkcolor=blue,bookmarksnumbered=true]{hyperref}
+\usepackage{latexsym,amssymb,amsmath,amsbsy,amsopn,amstext,amsthm,amsxtra,color,multicol,bm,calc,ifpdf}
+\usepackage{graphicx}
+\usepackage{diagbox}   % 绘制表格斜线
+\usepackage{enumerate}
+\usepackage{epstopdf}
+\usepackage{fancyhdr}
+\usepackage{subfigure}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{makeidx}
+\usepackage{xcolor} 
+\usepackage{algorithm}    % format of the algorithm
+\usepackage{algorithmic}    % format of the algorithm
+\usepackage{fontspec}                            % 建立索引宏包
+\graphicspath{{figures/}}  % 设置图片搜索路径
+\theoremstyle{plain} \newtheorem{theorem}{定理}[section]
+\theoremstyle{plain} \newtheorem{definition}{定义}[section]
+\theoremstyle{plain} \newtheorem{lemma}{引理}[section]
+\theoremstyle{plain} \newtheorem{proposition}{命题}[section]
+\theoremstyle{plain} \newtheorem{example}{例}[section]
+\theoremstyle{plain} \newtheorem{remark}{注}[section]
+\theoremstyle{plain} \newtheorem{corollary}{推论}[section]
+\newfontfamily\courier{Courier New}
+\lstset{linewidth=1.1\textwidth,
+        numbers=left, %设置行号位置 
+        basicstyle=\small\courier,
+        numberstyle=\tiny\courier, %设置行号大小  
+        keywordstyle=\color{blue}\courier, %设置关键字颜色  
+        %identifierstyle=\bf，
+        commentstyle=\it\color[cmyk]{1,0,1,0}\courier, %设置注释颜色 
+        stringstyle=\it\color[RGB]{128,0,0}\courier,
+        %framexleftmargin=10mm,
+        frame=single, %设置边框格式  
+        backgroundcolor=\color[RGB]{245,245,244},
+        %escapeinside=``, %逃逸字符(1左面的键)，用于显示中文  
+        breaklines, %自动折行  
+        extendedchars=false, %解决代码跨页时，章节标题，页眉等汉字不显示的问题  
+        xleftmargin=2em,xrightmargin=2em, aboveskip=1em, %设置边距  
+        tabsize=4, %设置tab空格数  
+        showspaces=false %不显示空格  
+        basicstyle=\small\courier
+       }  
+\newenvironment{mysolution}{{\color{blue} 解}： }{{\color{magenta}\qed}}
+\newcommand\diff{\,{\mathrm d}} %定义微分d
+\newcommand{\p}[3]{\frac{\partial^{#1}#2}{\partial{#3}^{#1}}}  %定义求偏导算子
+\newcommand{\ucite}[1]{\textsuperscript{\cite{#1}}}  %参考文献引用：上标用\ucite{ }，文中用\cite{ }
+
+\begin{document}
+\title{
+\includegraphics[width=0.65\textwidth]{onepiece.pdf}\\
+\vspace{2em}
+\textbf{Bayes 方法学习笔记}}
+\author{\emph{李向阳} \quad {\color{blue} d1142845997@gmail.com} }
+\date{}
+
+
+\maketitle
+\thispagestyle{empty}
+
+\newpage
+
+
+\tableofcontents
+
+\newpage
+
+\section{引入}
+之前只学过基本的概率论与数理统计课程, 并没有系统的接触过贝叶斯统计学. 因此, 为了以后学习的方便, 把贝叶斯统计的主要方法记录下来, 以及在机器学习中的应用也稍微总结下.
+
+
+\section{贝叶斯统计}
+\subsection{贝叶斯推断方法}
+在贝叶斯学派看来, 一切未知参数$\bm{\theta}$都可以看成是一个随机变量, 有概率分布, 这个概率分布称为先验分布. 观测到样本以后, 利用样本分布以及$\bm{\theta}$的先验分布, 我们可以导出$\bm{\theta}$的后验分布, 统计推断基于后验分布进行.
+
+由贝叶斯公式可得
+\begin{equation}\label{eq:bayesframe}
+\begin{split}
+p(\bm{\theta} | \bm{x}) & = \frac{p(\bm{x}, \bm{\theta})}{p(\bm{x})} = \frac{p(\bm{x}, \bm{\theta})}{\displaystyle \int_{\bm{\theta}} p(\bm{x}, \bm{\theta}) \diff \bm{\theta}} \\ 
+& = \frac{p(\bm{x} | \bm{\theta}) p(\bm{\theta})}{\displaystyle \int_{\bm{\theta}} p(\bm{x} | \bm{\theta}) p(\bm{\theta})  \diff \bm{\theta}}
+\end{split}
+\end{equation}
+
+这里使用了不太清晰的记法, 其中$p(\bm{\theta} | \bm{x})$表示参数$\bm{\theta}$的后验分布, $p(\bm{x}, \bm{\theta})$表示样本与参数的联合概率密度, $p(\bm{x})$表示样本的边际密度(边际密度可由联合密度积分而得, 其实这都是概率论里面随机变量的知识).
+
+最关键的是$p(\bm{x} | \bm{\theta})$, 我们用它表示的是观测样本$\bm{x}$的分布. 从贝叶斯统计的观点看, 样本分布是给定$\bm{\theta}$条件下的条件分布$p(\bm{x} | \bm{\theta})$, 它是样本的联合概率函数, 也即是通常的似然函数$L(\bm{\theta} | \bm{x})$(或记为$L(\bm{\theta})$).
+
+经典统计中, 称$p(\bm{x}; \bm{\theta})$为似然函数. 而在贝叶斯统计中, 样本分布$p(\bm{x}; \bm{\theta})$(即似然函数)被看成是给定某$\bm{\theta}$时样本$\bm{x}$的条件分布, 因此记为$p(\bm{x} | \bm{\theta})$.
+
+本质上讲, 似然函数不是严格的概率分布, 但是在贝叶斯统计中, 我们将其看成是样本$\bm{x}$的分布, 即看成是样本的概率(密度)函数, 因此公式(\ref{eq:bayesframe})是成立的, 把似然函数看成是样本分布, 就容易理解了.
+
+
+
+\subsection{多参数模型}
+
+
+\section{贝叶斯分类}
+\subsection{模型预测}
+沿用以前的记号, 假设我们的训练数据集为$\mathcal{D} = \{\bm{X}, \bm{Y}\}$, 其中$\bm{X} = \{ \bm{x}_1, \bm{x}_2, \cdots, \bm{x}_m \}$表示$m$个样本, $\bm{Y} = \{y_1, y_2, \cdots, y_m\}$表示相应的类别标签. 一般我们用$(\bm{x}, y)$表示单个的样本. 如果是训练数据, 那么其类别标签$y$就是已知的, 如果是待预测数据, 那么其类别标签就是未知的, 当然, 为了明确区分, 也可以把待预测数据记为$(\tilde{\bm{x}}, \tilde{y})$, 其中$\tilde{y}$未知.
+
+所谓判别模型(以下可以联想 Logistic 回归), 是给定新的预测样本$\tilde{\bm{x}}$后, 想直接求出$P(\tilde{y} | \tilde{\bm{x}})$, 即输出关于输入的条件(概率)分布, 当然, 从贝叶斯统计角度看, 这个分布的条件实际还有训练数据, 因为我们是看过训练数据之后, 学习到了对数据分布的后验认识, 然后根据这个认识对新的测试样本$\tilde{\bm{x}}$做类别预测的, 也就是说可记为$P(\tilde{y} | \tilde{\bm{x}}) = P(\tilde{y} | \tilde{\bm{x}}, \bm{Y}, \bm{X})$.
+
+我们建立模型, 认为这个条件(概率)分布是由参数$\bm{\theta}$决定的(不管是参数还是超参数, 都先包含在$\bm{\theta}$里), 记为$P(\tilde{y} | \tilde{\bm{x}}, \bm{\theta})$, 这个分布的形式是假设好的, 已知的.
+
+那么如何由$P(\tilde{y} | \tilde{\bm{x}}, \bm{\theta})$得到$P(\tilde{y} | \tilde{\bm{x}})$呢? 
+
+经典统计的观点是假设参数$\bm{\theta}$是固定不变的, 因此求得了其估计值, 也就得到$P(\tilde{y} | \tilde{\bm{x}})$了. 我们这里采用的是贝叶斯统计的观点, 即认为参数$\bm{\theta}$是一个随机变量, 它也是有概率分布的, 假如我们可以根据训练数据求出$\bm{\theta}$的后验分布$P(\bm{\theta} | \bm{Y}, \bm{X})$, 那么就有很多种方法了, 比如可以采用$\bm{\theta}$的最大后验估计作为点估计值, 这样就跟经典统计的方法类似, 此外, 也可以在整个参数空间上做平均, 即
+\begin{align}
+P(\tilde{y} | \tilde{\bm{x}}) & = P(\tilde{y} | \tilde{\bm{x}}, \bm{Y}, \bm{X}) \\ 
+& = \int P(\tilde{y}, \bm{\theta} | \tilde{\bm{x}}, \bm{Y}, \bm{X}) \diff \bm{\theta} = \int P(\tilde{y} | \tilde{\bm{x}}, \bm{\theta}) \cdot P(\bm{\theta} | \bm{Y}, \bm{X}) \diff \bm{\theta}
+\end{align}
+
+从贝叶斯角度看, 最关键的是求出参数$\bm{\theta}$的后验分布$P(\bm{\theta} | \bm{Y}, \bm{X})$, 有了后验分布, 可以用点估计做预测, 也可以在整个参数空间上进行积分做预测, 后者是 full bayesian 的观点.
+
+
+\subsection{模型训练}
+如何求出参数$\bm{\theta}$的后验分布$P(\bm{\theta} | \bm{Y}, \bm{X})$呢?
+
+其实这在贝叶斯统计中已经很普通了, 我们知道, 后验分布是正比于先验分布与似然函数的乘积的. 训练数据的似然函数为
+\begin{equation}
+P(\bm{Y} | \bm{X}, \bm{\theta}) = L(\bm{\theta}) = \prod_{i=1}^{m} P(y_i | \bm{x}_i, \bm{\theta})
+\end{equation}
+
+根据贝叶斯公式, 有
+\begin{equation}
+P(\bm{\theta} | \bm{Y}, \bm{X}) = \frac{P(\bm{Y} | \bm{X}, \bm{\theta}) \cdot P(\bm{\theta})}{P(\bm{Y} | \bm{X})}
+\end{equation}
+
+ 其中
+ \begin{equation}
+ P(\bm{Y} | \bm{X}) = \int P(\bm{Y}, \bm{\theta} | \bm{X}) \diff \bm{\theta} = \int P(\bm{Y} | \bm{X}, \bm{\theta}) \cdot P(\bm{\theta}) \diff \bm{\theta}
+ \end{equation}
+ 
+
+
+\section{变分贝叶斯}
+变分贝叶斯的基本框架在介绍 Logistic 回归时已经讲过了, 这里再明确一点, 变分推断是干什么的?
+
+上面我们看到, 用 full	bayesian 的观点去做模型预测, 需要对后验分布做积分. 事实上, 即便不用 full bayesian 的观点, 也就是使用点估计, 那么在二次损失函数下, 参数$\bm{\theta}$的贝叶斯点估计为后验均值, 也就是
+\begin{equation}
+\hat{\bm{\theta}} = \int \bm{\theta} \cdot P(\bm{\theta} | \bm{Y}, \bm{X}) \diff \bm{\theta}
+\end{equation}
+
+因此, 对后验分布的积分计算是无法避免的, 而解析的计算这些积分又很困难, 所以才有了各种近似算法, 比如 MCMC 采样算法. 而所谓变分推断, 便是寻求后验分布的近似表达式, 或者说用一个分布去近似后验分布, 使得积分的计算能够处理.
+
+
+
+
+
+
+
+
+\section{总结}
+\subsection{参考资料}
+\begin{enumerate}[(1)]
+\item 知乎: \url{https://www.zhihu.com/collection/45422299}, 魏晋的回答, 理清了一些关系, 虽然是借着生成模型与判别模型的区别回答的.
+
+\item 博客: \url{http://www.flickering.cn/%E6%95%B0%E5%AD%A6%E4%B9%8B%E7%BE%8E/2014/06/lda%E6%95%B0%E5%AD%A6%E5%85%AB%E5%8D%A6mcmc-%E5%92%8C-gibbs-sampling/}, 理论介绍的更为详细一些.
+
+
+\end{enumerate}
+
+
+
+
+
+\begin{thebibliography}{4}
+  \bibitem{1} 李荣华.\emph{偏微分方程数值解法}.高等教育出版社(2010) 
+  \bibitem{2} Zhilin Li,Zhonghua Qiao,Tao Tang.\emph{Numerical Solutions of Partial Differential Equations-An Introduction to Finite Difference and Finite Element Methods}.(2011)
+  \bibitem{3} 孙志忠.\emph{偏微分方程数值解法}.科学出版社(2011)
+
+\end{thebibliography}
+
+\newpage
+
+\section*{附录}
+
+
+
+
+
+
+
+
+\end{document}

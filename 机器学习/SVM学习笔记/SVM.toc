@@ -1,0 +1,13 @@
+\contentsline {section}{\numberline {1}引入}{3}{section.1}
+\contentsline {section}{\numberline {2}基本SVM模型}{3}{section.2}
+\contentsline {subsection}{\numberline {2.1}函数间隔和几何间隔}{3}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}SVM的优化目标}{4}{subsection.2.2}
+\contentsline {subsection}{\numberline {2.3}支撑向量}{5}{subsection.2.3}
+\contentsline {section}{\numberline {3}核方法(Kernel)}{8}{section.3}
+\contentsline {section}{\numberline {4}软间隔与正则化}{12}{section.4}
+\contentsline {section}{\numberline {5}SMO 方法}{14}{section.5}
+\contentsline {section}{\numberline {6}总结}{16}{section.6}
+\contentsline {subsection}{\numberline {6.1}关于 SVM 的补充}{16}{subsection.6.1}
+\contentsline {subsection}{\numberline {6.2}参考资料}{19}{subsection.6.2}
+\contentsline {subsection}{\numberline {6.3}SVM的应用场景}{19}{subsection.6.3}
+\contentsline {subsection}{\numberline {6.4}SVM的优缺点}{19}{subsection.6.4}

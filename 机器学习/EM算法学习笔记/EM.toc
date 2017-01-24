@@ -1,0 +1,11 @@
+\contentsline {section}{\numberline {1}隐变量}{3}{section.1}
+\contentsline {subsection}{\numberline {1.1}最大似然估计回顾}{3}{subsection.1.1}
+\contentsline {subsection}{\numberline {1.2}一个一维的例子}{3}{subsection.1.2}
+\contentsline {subsection}{\numberline {1.3}身高的例子}{6}{subsection.1.3}
+\contentsline {subsection}{\numberline {1.4}混合高斯模型}{7}{subsection.1.4}
+\contentsline {section}{\numberline {2}EM算法一般化}{11}{section.2}
+\contentsline {section}{\numberline {3}总结}{14}{section.3}
+\contentsline {subsection}{\numberline {3.1}参考资料}{14}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}混合高斯模型的应用场景}{15}{subsection.3.2}
+\contentsline {subsection}{\numberline {3.3}混合高斯模型的优缺点}{15}{subsection.3.3}
+\contentsline {subsection}{\numberline {3.4}EM 算法的应用场景}{15}{subsection.3.4}

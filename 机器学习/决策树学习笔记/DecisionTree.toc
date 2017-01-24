@@ -1,0 +1,15 @@
+\contentsline {section}{\numberline {1}引入}{3}{section.1}
+\contentsline {section}{\numberline {2}三个经典例子}{3}{section.2}
+\contentsline {subsection}{\numberline {2.1}信贷的例子}{3}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}打网球的例子}{8}{subsection.2.2}
+\contentsline {subsection}{\numberline {2.3}打高尔夫的例子}{12}{subsection.2.3}
+\contentsline {section}{\numberline {3}C4.5 算法和 C5.0 算法}{16}{section.3}
+\contentsline {section}{\numberline {4}过拟合与正则化}{17}{section.4}
+\contentsline {section}{\numberline {5}CART 算法}{17}{section.5}
+\contentsline {section}{\numberline {6}关于决策树的补充}{19}{section.6}
+\contentsline {subsection}{\numberline {6.1}决策树用于回归}{19}{subsection.6.1}
+\contentsline {subsection}{\numberline {6.2}决策树中的其它重要参数}{20}{subsection.6.2}
+\contentsline {section}{\numberline {7}总结}{20}{section.7}
+\contentsline {subsection}{\numberline {7.1}参考资料}{20}{subsection.7.1}
+\contentsline {subsection}{\numberline {7.2}决策树模型的应用场景}{20}{subsection.7.2}
+\contentsline {subsection}{\numberline {7.3}决策树模型的优缺点}{20}{subsection.7.3}

@@ -1,0 +1,8 @@
+\contentsline {section}{\numberline {1}引入}{3}{section.1}
+\contentsline {section}{\numberline {2}回归任务}{3}{section.2}
+\contentsline {section}{\numberline {3}分类任务}{3}{section.3}
+\contentsline {subsection}{\numberline {3.1}准确率和错误率}{3}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}查准率和查全率}{3}{subsection.3.2}
+\contentsline {subsection}{\numberline {3.3}ROC 曲线与 AUC}{5}{subsection.3.3}
+\contentsline {section}{\numberline {4}总结}{7}{section.4}
+\contentsline {subsection}{\numberline {4.1}参考资料}{7}{subsection.4.1}

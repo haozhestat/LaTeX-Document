@@ -1,0 +1,305 @@
+% !TEX program = xelatex
+\documentclass[a4paper,UTF8]{ctexart}
+\usepackage[unicode=true,colorlinks,urlcolor=blue,linkcolor=blue,bookmarksnumbered=true]{hyperref}
+\usepackage{latexsym,amssymb,amsmath,amsbsy,amsopn,amstext,amsthm,amsxtra,color,multicol,bm,calc,ifpdf}
+\usepackage{graphicx}
+\usepackage{diagbox}   % 绘制表格斜线
+\usepackage{enumerate}
+\usepackage{epstopdf}
+\usepackage{fancyhdr}
+\usepackage{subfigure}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{makeidx}
+\usepackage{xcolor} 
+\usepackage{algorithm}    % format of the algorithm
+\usepackage{algorithmic}    % format of the algorithm
+\usepackage{fontspec}                            % 建立索引宏包
+\graphicspath{{figures/}}  % 设置图片搜索路径
+\theoremstyle{plain} \newtheorem{theorem}{定理}[section]
+\theoremstyle{plain} \newtheorem{definition}{定义}[section]
+\theoremstyle{plain} \newtheorem{lemma}{引理}[section]
+\theoremstyle{plain} \newtheorem{proposition}{命题}[section]
+\theoremstyle{plain} \newtheorem{example}{例}[section]
+\theoremstyle{plain} \newtheorem{remark}{注}[section]
+\theoremstyle{plain} \newtheorem{corollary}{推论}[section]
+\newfontfamily\courier{Courier New}
+\lstset{linewidth=1.1\textwidth,
+        numbers=left, % 设置行号位置 
+        basicstyle=\small\courier,
+        numberstyle=\tiny\courier, % 设置行号大小  
+        keywordstyle=\color{blue}\courier, % 设置关键字颜色  
+        % identifierstyle=\bf,
+        commentstyle=\it\color[cmyk]{1,0,1,0}\courier, % 设置注释颜色 
+        stringstyle=\it\color[RGB]{128,0,0}\courier,
+        % framexleftmargin=10mm,
+        frame=single, % 设置边框格式  
+        backgroundcolor=\color[RGB]{245,245,244},
+        % escapeinside=``, % 逃逸字符(1左面的键), 用于显示中文  
+        breaklines, % 自动折行  
+        extendedchars=false, % 解决代码跨页时, 章节标题, 页眉等汉字不显示的问题  
+        xleftmargin=2em,xrightmargin=2em, aboveskip=1em, % 设置边距  
+        tabsize=4, % 设置tab空格数  
+        showspaces=false % 不显示空格  
+        basicstyle=\small\courier
+       }  
+\newenvironment{mysolution}{{\color{blue} 解}: }{{\color{magenta}\qed}}
+\newcommand\diff{\,{\mathrm d}} % 定义微分 d
+\newcommand{\p}[3]{\frac{\partial^{#1}#2}{\partial{#3}^{#1}}}  % 定义求偏导算子
+\newcommand{\ucite}[1]{\textsuperscript{\cite{#1}}}  %参考文献引用: 上标用\ucite{ }, 文中用\cite{ }
+
+\begin{document}
+\title{
+\includegraphics[width=0.65\textwidth]{onepiece.pdf}\\
+\vspace{2em}
+\textbf{PCA 与 SVD 笔记}}
+\author{\emph{李向阳} \quad {\color{blue} d1142845997@gmail.com} }
+\date{}
+
+
+\maketitle
+\thispagestyle{empty}
+
+\newpage
+
+
+\tableofcontents
+
+\newpage
+
+\section{引入}
+PCA 与 SVD 是一种降维技术, 在很多领域都有重要应用, 因此五花八门的介绍也很多. 为了建立自己的体系, 这里稍微介绍一下, 也方便回顾.
+
+SVD(Singular Value Decomposition), 也就是奇异值分解, 严格的数学介绍是在大四的矩阵分析课上, 而 PCA(Principal Component Analysis), 即主成分分析, 是在大三的数据分析课上学的, 是偏统计的角度, 对细节也都做了证明. 因此, 这篇笔记会略去一些证明, 着重对关系进行梳理.
+
+
+\section{SVD}
+SVD 本身就具有丰富的内容, 详细可见维基 \url{https://en.wikipedia.org/wiki/Singular_value_decomposition}.
+
+
+
+\section{PCA}
+\subsection{统计中的 PCA}
+统计中经常用$n$表示样本数, 用$p$表示特征数(维数), 这里我们仍延续机器学习系列笔记的记号, 用$m$表示样本数, 用$n$表示特征数.
+
+设总体为$n$维随机向量$\bm{X} = (X_1, X_2, \cdots, X_n)^{T}$, 主成分分析是构造原变量的一系列线性组合$Y_1, Y_2, \cdots$, 使其方差达到最大(具体可回顾数据分析方法课本). 实际中, 是从总体中抽样得到了$m$个样本, 其中$\bm{x}_{i} = (x_{i1}, x_{i2}, \cdots, x_{in})^{T}, \bm{x}_i \in \mathbb{R}^{n}, i = 1, 2, \cdots, m$, 把样本按行并起来得到了$m \times n$的观测数据矩阵
+$$
+\bm{X} = 
+\begin{pmatrix}
+\bm{x}_{1}^{T} \\ 
+\bm{x}_{2}^{T} \\ 
+\vdots \\ 
+\bm{x}_{m}^{T}
+\end{pmatrix}
+= 
+\begin{pmatrix}
+x_{11}  &  x_{12}  &  \cdots  &  x_{1n} \\ 
+x_{21}  &  x_{22}  &  \cdots  &  x_{2n} \\ 
+\vdots  &  \vdots  &  \ddots  &  \vdots \\ 
+x_{m1}  &  x_{m2}  &  \cdots  &  x_{mn}
+\end{pmatrix}
+$$
+
+为了后面讨论的方便, 我们要求$\bm{X}$是去中心化后的矩阵(即每一列已经减去了列均值), 即$\sum_{i = 1}^{m} x_{i, j} = 0, j = 1, 2, \cdots, n$, 事实上可写为$\sum_{i = 1}^{m} \bm{x}_i = \bm{0}$, 这样样本的协方差阵为(为了推导形式的方便, 分母取为$m$也可, 本身二者都可以)
+\begin{equation*}
+\bm{S} = \frac{1}{m - 1} \sum_{i=1}^{m} \bm{x}_i \bm{x}_{i}^{T} = \frac{1}{m - 1} \bm{X}^{T} \bm{X}
+\end{equation*}
+
+数据分析课上讲过, 设$\bm{S}$为样本的协方差矩阵(半正定矩阵), 其特征值按大小顺序排列为$\lambda_1 \geqslant \lambda_2 \geqslant \cdots \geqslant \lambda_n \geqslant 0$, 相应的正交单位化特征向量为$\bm{e}_1, \cdots, \bm{e}_n$, 则总体的第$j$个主成分可表示为
+\begin{equation*}
+y_{j} = \bm{e}_{j}^{T} \bm{x} = e_{j1} x_1 + e_{j2} x_2 + \cdots + e_{jn} x_n, j = 1, 2, \cdots, n
+\end{equation*}
+
+其中$\bm{e}_{j} = (e_{j1}, e_{j2}, \cdots, e_{jn})^{T}$. 把第$i$个样本值$\bm{x}_i = (x_{i1}, x_{i2}, \cdots, x_{in})^{T}$代入, 便得到该样本在第$j$个主成分上的得分$y_{ij}$, 如下表所示
+\begin{table}[!htb]
+\centering
+\caption{原始数据及主成分得分}
+\label{tab:score}
+\begin{tabular}{c|ccccc|ccccc}
+\hline
+\multirow{2}{*}{样本序号} &  & \multicolumn{4}{c}{原始变量}                  &  & \multicolumn{4}{c}{主成分}                   \\ \cline{2-11} 
+                      &  & $X_1$    & $X_2$    & $\cdots$ & $X_n$    &  & $Y_1$    & $Y_2$    & $\cdots$ & $Y_n$    \\ \hline
+1                     &  & $x_{11}$ & $x_{12}$ & $\cdots$ & $x_{1n}$ &  & $y_{11}$ & $y_{12}$ & $\cdots$ & $y_{1n}$ \\ \hline
+2                     &  & $x_{21}$ & $x_{22}$ & $\cdots$ & $x_{2n}$ &  & $y_{21}$ & $y_{22}$ & $\cdots$ & $y_{2n}$ \\ \hline
+$\vdots$              &  & $\vdots$ & $\vdots$ &          & $\vdots$ &  & $\vdots$ & $\vdots$ &          & $\vdots$ \\ \hline
+$m$                   &  & $x_{m1}$ & $x_{m2}$ & $\cdots$ & $x_{mn}$ &  & $y_{m1}$ & $y_{m2}$ & $\cdots$ & $y_{mn}$ \\ \hline
+\end{tabular}
+\end{table}
+
+一般我们会选取前$k(k < n)$个主成分, 用前$k$个主成分的得分替代原始数据做分析, 这样便达到了数据降维的目的. 其中第$j$个主成分的贡献率为$\lambda_{j} / \sum\limits_{i=1}^{n} \lambda_i$, 前$k$个主成分的累计贡献率为$\sum\limits_{i=1}^{k} \lambda_i / \sum\limits_{i=1}^{n} \lambda_i$.
+
+用矩阵形式表达, 即首先对于样本协方差阵$S$对角化, 有
+\begin{equation*}
+\bm{S} = \bm{Q} ~ \mathrm{diag}(\lambda_1, \cdots, \lambda_n) ~ \bm{Q}^{T} 
+\end{equation*}
+
+其中$\bm{Q} = (\bm{e}_1, \bm{e}_2, \cdots, \bm{e}_n)$. 然后可得新的数据矩阵$\bm{Y} = (y_{ij})$为
+\begin{equation*}
+\bm{Y} = \bm{X} \bm{Q}
+\end{equation*}
+
+若取前$k$个主成分, 即令$\bm{Q}_k = (\bm{e}_1, \cdots, \bm{e}_k)$, 降维矩阵$\bm{Y}_k$为
+\begin{equation*}
+\bm{Y}_k = \bm{X} \bm{Q}_k
+\end{equation*}
+
+
+
+\subsection{利用 SVD 做 PCA}
+关于 SVD 与 PCA 的关系, 可参考 \url{http://stats.stackexchange.com/questions/134282/relationship-between-svd-and-pca-how-to-use-svd-to-perform-pca}, 介绍的比较清楚.
+
+这里说一下利用 SVD 做 PCA.
+
+原始数据矩阵$\bm{X}$是一个$m \times n$矩阵, 对其做奇异值分解
+\begin{equation*}
+\bm{X} = \bm{U} \bm{D} \bm{V}^{T}
+\end{equation*}
+
+其中$\bm{U} = (\bm{u}_1, \cdots, \bm{u}_m)$为$m \times m$阶正交阵, $\bm{V} = (\bm{v}_1, \cdots, \bm{v}_n)$为$n \times n$阶正交阵, $\bm{D}$为一个对角阵(实际上为$m \times n$), 其对角元为矩阵$\bm{X}$的奇异值$\sigma_i$, 也就是$\bm{X}^T \bm{X}$特征值的平方根. 于是可得
+\begin{equation*}
+\bm{X}^{T} \bm{X} = \bm{V} \bm{D}^2 \bm{V}^{T}
+\end{equation*}
+
+这里$\bm{D}^2 = \mathrm{diag}(\sigma_{1}^2, \cdots, \sigma_{n}^2)$表示$n$阶对角阵. 注意到样本协方差阵为$\bm{S} = \frac{1}{m - 1} \bm{X}^T \bm{X}$, 因此
+\begin{equation*}
+\bm{S} = \bm{V} \frac{\bm{D}^2}{m - 1} \bm{V}^{T}
+\end{equation*}
+
+这不正好是协方差阵$\bm{S}$的对角化吗? 其中$\bm{S}$的特征值为$\lambda_{i} = \sigma_{i}^2 / (m - 1)$. 那么根据上面主成分得分的求法, 新的得分矩阵为
+\begin{equation*}
+\bm{Y} = \bm{X} \bm{V} = \bm{U} \bm{D} \bm{V}^{T} \bm{V} = \bm{U} \bm{D}
+\end{equation*}
+
+同样的, 若取前$k(k < n)$个主成分, 即令$\bm{V}_k$为矩阵$\bm{V}$的前$k$列, $\bm{U}_k$为矩阵$\bm{U}$的前$k$列, $\bm{D}_{mk}$为矩阵$\bm{D}$的前$k$列, $\bm{D}_k$为矩阵$\bm{D}$的左上$k \times k$对角阵, 可得降维得分矩阵为
+\begin{equation*}
+\bm{Y}_k = \bm{X} \bm{V}_k = \bm{U} \bm{D}_{mk} = \bm{U}_k \bm{D}_k
+\end{equation*}
+
+注意用分块矩阵可以去理解证明上式, $\bm{U}_k = (\bm{u}_1, \cdots, \bm{u}_k), \bm{V}_k = (\bm{v}_1, \cdots, \bm{v}_k)$.
+\begin{align*}
+\bm{Y}_k & = \bm{X} \bm{V}_k = \bm{U} \bm{D} \bm{V}^{T} \bm{V}_k \\
+& = \bm{U} \bm{D}
+\begin{pmatrix}
+\bm{v}_1^{T} \\ 
+\bm{v}_2^{T} \\ 
+\vdots \\ 
+\bm{v}_n^{T} \\ 
+\end{pmatrix}
+(\bm{v}_1, \cdots, \bm{v}_k) = \bm{U} \bm{D} 
+\begin{pmatrix}
+\bm{I}_k &  \bm{0} \\ 
+\bm{0}  &  \bm{0}
+\end{pmatrix} \\ 
+& = \bm{U} \bm{D}_{mk} = \bm{U}_k \bm{D}_k
+\end{align*}
+
+
+\begin{remark}
+若令$\bm{X}_k = \bm{U}_k \bm{D}_k \bm{V}_k^{T}$, 即
+\begin{equation*}
+\bm{X}_k = \sum_{j=1}^{k} \sigma_j \bm{u}_j \bm{v}_j^{T}
+\end{equation*}
+
+则$\bm{X}_k$仍是一个$m \times n$矩阵, 只不过它的秩为$k < n$, 在矩阵分析的课上我们证明$\bm{X}_k$是$\bm{X}$的一个最佳低秩逼近, 证明过程也可见 \url{http://stats.stackexchange.com/questions/130721/what-norm-of-the-reconstruction-error-is-minimized-by-the-low-rank-approximation}.
+
+$\bm{X}_k$也可看做是利用前$k$个主成分对矩阵$\bm{X}$的重建.
+
+\end{remark}
+
+
+\section{Kernel PCA}
+\subsection{PCA 重述}
+PCA 实际上是将样本点在几个互相正交的方向上进行投影来达到降维的目的. 投影方向就是协方差阵$\bm{S}$的特征向量的方向.
+
+设$\bm{S} \bm{v} = \lambda \bm{v}$, 将特征向量$\bm{v}$按照特征值降序排列, 然后将样本点投影在特征向量上. 协方差阵$\bm{S}$的特征向量其实可表示为样本点的线性组合. 事实上
+\begin{equation*}
+\lambda \bm{v} = \bm{S} \bm{v} = \frac{1}{m - 1} \sum_{i = 1}^{m} \bm{x}_i \bm{x}_{i}^{T} \bm{v} = \frac{1}{m - 1} \sum_{i = 1}^{m} (\bm{x}_{i}^{T} \bm{v}) \bm{x}_i = \frac{1}{m - 1} \sum_{i = 1}^{m} \langle \bm{x}_i, \bm{v} \rangle \bm{x}_i
+\end{equation*}
+
+其中$\bm{x}_{i}^{T} \bm{v}$是一个数, 因此用了欧式内积表示, 于是可得
+\begin{equation*}
+\bm{v} = \frac{1}{\lambda (m - 1)} \sum_{i = 1}^{m} \langle \bm{x}_i, \bm{v} \rangle \bm{x}_i = \sum_{i = 1}^{m} \alpha_i \bm{x}_i = \bm{X}^{T} \bm{\alpha}
+\end{equation*}
+
+如何寻求系数$\bm{\alpha} = (\alpha_1, \alpha_2, \cdots, \alpha_m)^{T}$呢?
+
+再次利用$\lambda \bm{v} = \bm{S} \bm{v}$, 可得
+\begin{equation*}
+(m - 1) \lambda \bm{v} = \sum_{i = 1}^{m} \bm{x}_i \bm{x}_{i}^{T} \bm{v},  \Rightarrow \mu \bm{v} = \sum_{i = 1}^{m} \bm{x}_i \bm{x}_{i}^{T} \bm{v}
+\end{equation*}
+
+也即
+\begin{align*}
+\mu \sum_{i = 1}^{m} \alpha_i \bm{x}_i = \sum_{i = 1}^{m} \left( \bm{x}_i \bm{x}_{i}^{T} \cdot \sum_{j = 1}^{m} \alpha_j \bm{x}_j \right)
+\end{align*}
+
+变形可得
+\begin{equation*}
+ \sum_{i = 1}^{m} \mu \alpha_i \cdot \bm{x}_i = \sum_{i = 1}^{m} \left( \sum_{j = 1}^{m} \alpha_j \langle \bm{x}_i, \bm{x}_j \rangle \right) \cdot \bm{x}_i
+\end{equation*}
+
+于是, 只需下式成立即可
+\begin{equation*}
+\mu \alpha_i =  \sum_{j = 1}^{m} \alpha_j \langle \bm{x}_i, \bm{x}_j \rangle, i = 1, 2, \cdots, m
+\end{equation*}
+
+因此$\bm{\alpha} = (\alpha_1, \cdots, \alpha_m)^{T}$满足$\bm{K} \bm{\alpha} = \mu \bm{\alpha}$, 即$\bm{\alpha}$是矩阵$\bm{K}$的特征向量, 其中$K \in \mathbb{R}^{m \times m}$为样本的内积矩阵
+\[
+\bm{K} = 
+\begin{pmatrix}
+\langle \bm{x}_1, \bm{x}_1 \rangle & \langle \bm{x}_1, \bm{x}_2 \rangle & \cdots & \langle \bm{x}_1, \bm{x}_m \rangle \\ 
+\langle \bm{x}_2, \bm{x}_1 \rangle & \langle \bm{x}_2, \bm{x}_2 \rangle & \cdots & \langle \bm{x}_2, \bm{x}_m \rangle \\ 
+\vdots & \vdots & \ddots & \vdots \\ 
+\langle \bm{x}_m, \bm{x}_1 \rangle & \langle \bm{x}_m, \bm{x}_2 \rangle & \cdots & \langle \bm{x}_m, \bm{x}_m \rangle \\ 
+\end{pmatrix}
+\]
+
+当然, 此时的矩阵$\bm{K}$还可表示为$\bm{K} = \bm{X} \bm{X}^{T}$.
+
+\subsection{核方法}
+考虑先将样本数据映射到另外一个空间, $\phi : \mathcal{X} \rightarrow \mathcal{H}, \bm{x} \mapsto \phi(\bm{x})$, 然后在新的空间中对样本点$ \phi(\bm{x}_1), \cdots, \phi(\bm{x}_m)$做 PCA.
+
+假设数据已经中心化, 即$\sum_{i = 1}^{m} \phi(\bm{x}_i) = \bm{0}$, 如何将映射后的数据中心化后面再提. 此时样本的协方差为
+\begin{equation*}
+\bm{S} = \frac{1}{m} \sum_{i = 1}^{m} \phi(\bm{x}_i) \phi(\bm{x}_i)^{T}
+\end{equation*}
+
+接下来按照 PCA 的步骤是一样的, 只需要把上面的$\bm{x}_i$换为$\phi(\bm{x}_i)$即可. 关键是计算样本的内积矩阵$\bm{K}$, 其$(i, j)$元为$\bm{K}(\bm{x}_i, \bm{x}_j) = \phi(\bm{x}_i)^{T} \phi(\bm{x}_j)$.
+
+如同 SVM 一样，在映射后的空间中计算内积是复杂的, 我们通过构造核函数$\kappa(\cdot)$来计算这个内积(相关回顾可看 SVM 笔记), 即有
+\begin{equation*}
+\kappa(\bm{x}_i, \bm{x}_j) = \phi(\bm{x}_i)^{T} \phi(\bm{x}_j)
+\end{equation*}
+
+核函数的选取跟 SVM 一样, 也有很多种选择, 比如多项式核、高斯核等等. 
+
+
+
+
+
+
+\section{总结}
+\subsection{参考资料}
+\begin{enumerate}[(1)]
+\item 博客: \url{http://www.cnblogs.com/LeftNotEasy/archive/2011/01/19/svd-and-applications.html}, 对奇异值分解的强大应用做了通俗介绍.
+
+\item JerryLead 的博客: \url{http://www.cnblogs.com/jerrylead/archive/2011/04/18/2020216.html}, 对主成分分析做了不同解释.
+
+\item PRML: 关于 Kernel PCA 的推导介绍, 可见 12.3 节.
+
+\end{enumerate}
+
+
+
+\newpage
+
+\section*{附录}
+
+
+
+
+
+
+
+
+\end{document}

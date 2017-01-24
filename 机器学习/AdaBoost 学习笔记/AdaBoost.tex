@@ -1,0 +1,513 @@
+%!TEX program = xelatex
+\documentclass[a4paper,UTF8]{ctexart}
+\usepackage[unicode=true,colorlinks,urlcolor=blue,linkcolor=blue,bookmarksnumbered=true]{hyperref}
+\usepackage{latexsym,amssymb,amsmath,amsbsy,amsopn,amstext,amsthm,amsxtra,color,multicol,bm,calc,ifpdf}
+\usepackage{graphicx}
+\usepackage{diagbox}   % 绘制表格斜线
+\usepackage{enumerate}
+\usepackage{epstopdf}
+\usepackage{fancyhdr}
+\usepackage{subfigure}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{makeidx}
+\usepackage{xcolor} 
+\usepackage{fontspec}                            % 建立索引宏包
+\graphicspath{{figures/}}  % 设置图片搜索路径
+\theoremstyle{plain} \newtheorem{theorem}{定理}[section]
+\theoremstyle{plain} \newtheorem{definition}{定义}[section]
+\theoremstyle{plain} \newtheorem{lemma}{引理}[section]
+\theoremstyle{plain} \newtheorem{proposition}{命题}[section]
+\theoremstyle{plain} \newtheorem{example}{例}[section]
+\theoremstyle{plain} \newtheorem{remark}{注}[section]
+\theoremstyle{plain} \newtheorem{corollary}{推论}[section]
+\newfontfamily\courier{Courier New}
+\lstset{linewidth=1.1\textwidth,
+        numbers=left, %设置行号位置 
+        basicstyle=\small\courier,
+        numberstyle=\tiny\courier, %设置行号大小  
+        keywordstyle=\color{blue}\courier, %设置关键字颜色  
+        %identifierstyle=\bf，
+        commentstyle=\it\color[cmyk]{1,0,1,0}\courier, %设置注释颜色 
+        stringstyle=\it\color[RGB]{128,0,0}\courier,
+        %framexleftmargin=10mm,
+        frame=single, %设置边框格式  
+        backgroundcolor=\color[RGB]{245,245,244},
+        %escapeinside=``, %逃逸字符(1左面的键)，用于显示中文  
+        breaklines, %自动折行  
+        extendedchars=false, %解决代码跨页时，章节标题，页眉等汉字不显示的问题  
+        xleftmargin=2em,xrightmargin=2em, aboveskip=1em, %设置边距  
+        tabsize=4, %设置tab空格数  
+        showspaces=false %不显示空格  
+        basicstyle=\small\courier
+       }  
+\newenvironment{mysolution}{{\color{blue} 解}： }{{\color{magenta}\qed}}
+\newcommand\diff{\,{\mathrm d}} %定义微分d
+\newcommand{\p}[3]{\frac{\partial^{#1}#2}{\partial{#3}^{#1}}}  %定义求偏导算子
+\newcommand{\ucite}[1]{\textsuperscript{\cite{#1}}}  %参考文献引用：上标用\ucite{ }，文中用\cite{ }
+
+\begin{document}
+\title{
+\includegraphics[width=0.65\textwidth]{onepiece.pdf}\\
+\vspace{2em}
+\textbf{AdaBoost 学习笔记}}
+\author{\emph{李向阳} \quad {\color{blue} d1142845997@gmail.com} }
+\date{}
+
+
+\maketitle
+\thispagestyle{empty}
+
+\newpage
+
+
+\tableofcontents
+
+\newpage
+
+\section{引入}
+本次介绍我们进入一个新的领域, 通常称之为集成学习(Ensemble Learning),其实也就是通过构建并结合多个学习器来完成学习的任务. 一般情况下, 集成学习是将多个“弱学习器”进行结合, 从而获得比单一学习器更显著优越的泛化性能. 其中一种很重要的方法便是 Boosting 方法.
+
+Boosting 是一族可将弱学习器提升为强学习器的算法. 这族算法的工作机制类似: 先从初始训练样本中训练出一个基学习器, 再根据基学习器的表现对训练样本分布进行调整, 使得先前基学习器做错的训练样本在后续受到更多关注, 然后基于调整后的样本分布来训练下一个基学习器, 如此反复进行, 直至基学习器达到事先指定的值$T$, 最终将这$T$个基学习器进行加权组合.
+
+Boosting 族算法最著名的代表便是 AdaBoost(Adaptive Boosting), 它是针对二分类问题的, 下面我们就来介绍 AdaBoost 算法.
+
+
+
+
+
+
+\section{基本模型}
+沿用之前的记号, 假设我们的样本是$(\bm{x}, y)$, 其中$y$是类标签, 用$y = \pm 1$区分正负类. 也就是我们的数据集为$D = \{(\bm{x}_1, y_1), (\bm{x}_2, y_2), \cdots, (\bm{x}_m, y_m)\}$, 其中$y_i \in \{-1, 1\}$. 假设训练的轮数为$T$, 即最终要训练出$T$个基分类器. 设最终的分类器为$h(\bm{x})$, 第$t$步迭代产生的基分类器为$h_{t}(\bm{x})$.
+
+我们先来说一下算法的流程.
+\begin{enumerate}[(1)]
+\item 初始化训练数据的权值分布
+\begin{equation*}
+\mathcal{D}_{1}(\bm{x}) = (w_{11}, \cdots, w_{1i}, \cdots, w_{1m}), w_{1i} = \frac{1}{m}, i = 1,2,\cdots,m
+\end{equation*}
+
+\item 接下来对$t = 1,2,\cdots,T$进行迭代:
+\begin{enumerate}[(a)]
+\item 使用具有权值分布$\mathcal{D}_{t}(\bm{x})$的训练数据集学习, 得到基本分类器
+\begin{equation*}
+h_{t}(\bm{x}): \rightarrow \{-1,1\}
+\end{equation*}
+
+\item 计算$h_{t}(\bm{x})$在训练数据集的分类误差率, 注意是加权计算
+\begin{equation*}
+e_{t} = P(h_{t}(\bm{x}_i) \neq y_i) = \sum_{i=1}^{m} w_{ti} \mathbb{I}(h_{t}(\bm{x}_i) \neq y_i)
+\end{equation*}
+
+\item 计算基分类器$h_{t}(\bm{x})$的系数
+\begin{equation*}
+\alpha_{t} = \frac{1}{2} \ln \frac{1 - e_t}{e_t}
+\end{equation*}
+
+
+\item 更新训练数据集的权值分布
+\begin{align*}
+\mathcal{D}_{t+1}(\bm{x}) & = (w_{t+1,1}, \cdots, w_{t+1,i}, \cdots, w_{t+1,m}) \\ 
+w_{t+1,i} & = \frac{w_{ti}}{Z_t} \exp (- \alpha_{t} y_{i} h_{t}(\bm{x}_i))
+\end{align*}
+
+其中$Z_t$是规范化因子
+\begin{equation*}
+Z_t = \sum_{i=1}^{m} w_{ti} \exp (- \alpha_{t} y_{i} h_{t}(\bm{x}_i))
+\end{equation*}
+
+它使得$\mathcal{D}_{t+1}(\bm{x})$成为一个概率分布.
+
+\end{enumerate}
+
+\item 构建基分类器的加权线性组合得到最终分类器
+\begin{equation*}
+h(\bm{x}) = \mathrm{sign}\left( \sum_{t=1}^{T} \alpha_{t} h_{t}(\bm{x}) \right)
+\end{equation*}
+
+\end{enumerate}
+
+以上便是 AdaBoost 算法的大致流程. 我们稍微解释一下.
+\begin{enumerate}[(1)]
+\item 初始化时等均值分布, 这样可以保证第$1$步能够在原始数据上学习到基分类器$h_{1}(\bm{x})$.
+
+\item 不断迭代学习出剩下的基分类器, 在每一轮$t=1,2,\cdots, T$上顺次执行
+\begin{enumerate}[(a)]
+\item 使用当前的数据分布$\mathcal{D}_{t}(\bm{x})$, 学习到基分类器$h_{t}(\bm{x})$.
+
+\item 计算基分类器$h_{t}(\bm{x})$在加权训练数据集上的分类误差率
+\begin{equation*}
+e_{t} = P(h_{t}(\bm{x}_i) \neq y_i) = \sum_{h_{t}(\bm{x}_i) \neq y_i} w_{ti}
+\end{equation*}
+
+其中$w_{ti}$表示第$t$轮迭代中第$i$个样本的权值, 满足$\sum\limits_{i=1}^{m}w_{ti} = 1$. 这表明, $h_{t}(\bm{x})$在加权的训练数据集上的分类误差率是被$h_{t}(\bm{x})$误分类样本的权值之和, 由此可以看出数据权值分布$\mathcal{D}_{t}(\bm{x})$与基分类器$h_{t}(\bm{x})$的分类误差率的关系.
+
+\item 计算基分类器$h_{t}(\bm{x})$的系数$\alpha_{t}$. 注意$e_{t}$表示$h_{t}(\bm{x})$在最终分类器中的重要性, 而且当$e_{t} \leqslant \frac{1}{2}$时, 才有$\alpha_{t} \geqslant 0$, $e_{t} \geqslant \frac{1}{2}$的情况后面会补充说明. 可以看出, $\alpha_{t}$随着$e_{t}$的减小而增大, 所以分类误差率越小的基分类器在最终分类器中的作用越大.
+
+\item 更新训练数据的权值分布为下一轮迭代做准备. 由于$y_{i}$和$h_{t}(\bm{x}_i)$的取值都是$1$或者$-1$, 因此权值更新式可改写为
+$$
+w_{t+1,i} = 
+\begin{cases}
+\frac{w_{ti}}{Z_t} \exp(- \alpha_{t}), & h_{t}(\bm{x}_i) = y_i \\ 
+\frac{w_{ti}}{Z_t} \exp(\alpha_{t}), & h_{t}(\bm{x}_i) \neq y_i
+\end{cases}
+$$
+
+可以看出, 被基分类器$h_{t}(\bm{x})$误分类样本的权值得以扩大, 而被正确分类的样本的权值得以缩小. 因此, 误分类样本在下一轮的学习中会起更大的作用. 不改变所给的训练数据, 而不断改变训练数据权值的分布, 使得训练数据在基分类器的学习中起不同的作用, 这正是 AdaBoost 的一个特点.
+
+关于权值更新公式, 这里额外提一点, 权值更新式即为
+\begin{equation*}
+w_{t+1,i} = w_{ti} \exp (- \alpha_{t} y_{i} h_{t}(\bm{x}_i))
+\end{equation*}
+
+然后将$w_{t+1,i}$归一化即可. 注意到
+\begin{equation*}
+y_{i} \cdot h_{t}(\bm{x}_i)) = 1 - 2 \cdot \mathbb{I}( h_{t}(\bm{x}_i) \neq y_{i} )
+\end{equation*}
+
+代入可得
+\begin{equation*}
+w_{t+1,i} = w_{ti} \cdot \exp (- \alpha_t) \cdot \exp (2 \alpha_t \mathbb{I}( h_{t}(\bm{x}_i) \neq y_{i})
+\end{equation*}
+
+由于因子$\exp(- \alpha_t)$与$n$无关, 在归一化时不起作用, 因此权值更新公式可写为
+\begin{equation*}
+w_{t+1,i} = w_{ti} \cdot \exp (2 \alpha_t \mathbb{I}( h_{t}(\bm{x}_i) \neq y_{i} ))
+\end{equation*}
+
+在有的资料中, 计算$\alpha_t$时略去了$\frac{1}{2}$, 即
+\begin{equation*}
+\alpha_t = \ln \frac{1 - e_t}{e_t}
+\end{equation*}
+
+因此权值更新公式变成了
+\begin{equation*}
+w_{t+1,i} = w_{ti} \cdot \exp (\alpha_t \mathbb{I}( h_{t}(\bm{x}_i) \neq y_{i} ))
+\end{equation*}
+
+然后将$w_{t+1,i}$归一化即可. 当然, 也有的资料中中不在这一步进行归一化, 而是在计算分类误差率$e_t$的时候进行归一化, 都是可以的.
+
+\end{enumerate}
+
+\item 最后的分类器$h(\bm{x})$是基分类器的加权表决. 系数$\alpha_t$表示了基分类器$h_{t}(\bm{x})$的重要性. 注意一点, 所有的$\alpha_t$之和并不一定是$1$. 
+
+\end{enumerate}
+
+下面我们举一个简单的例子, 该例子来自李航的《统计学习方法》.
+\begin{example}
+我们的训练样本如表\ref{simpledata}所示, 为了方便, 把表横过来写了. 同时也只有一个特征变量, 所以就简记为$x$了. 假设弱分类器由$x < v$或者$x > v$产生, 其中阈值$v$使该分类器在训练数据集上的分类误差率最低, 试用 AdaBoost 算法学习出一个强分类器.
+\begin{table}[!htb]
+\centering
+\caption{训练数据表}
+\label{simpledata}
+\begin{tabular}{ccccccccccc}
+  \hline
+    % after \: \hline or \cline{col1-col2} \cline{col3-col4} ...
+    ID & ID1 & ID2 & ID3 & ID4 & ID5 & ID6 & ID7 & ID8 & ID9 & ID10 \\ 
+    \hline
+    $x$ & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 \\
+    $y$ & 1 & 1 & 1 & -1 & -1 & -1 & 1 & 1 & 1 & -1 \\
+  \hline
+\end{tabular}
+\end{table}
+
+\end{example}
+
+
+\begin{mysolution}
+初始化数据的权值分布
+\begin{align*}
+\mathcal{D}_{1}(\bm{x}) & = (w_{11},w_{12},\cdots, w_{1,10}) \\ 
+w_{1,i} & = 0.1, i = 1,2 \cdots, 10
+\end{align*}
+
+{\color{red}对$t=1$, 开始第一轮迭代}
+\begin{enumerate}[(a)]
+\item 在权值分布为$\mathcal{D}_{1}(\bm{x})$的训练数据上, 容易看出阈值$v$取$2.5$时分类误差率可达到最低, 比如取
+$$
+h_{1}(\bm{x}) = 
+\begin{cases}
+1, & x < 2.5 \\ 
+-1, & x > 2.5
+\end{cases}
+$$
+
+此时仅有$3$个误分类点, 实际上阈值取为$8.5$也可以, 即$x < 8.5$时令$y$取$1$, $x > 8.5$时令$y$取$-1$, 此时也是有$3$个误分类点, 误差率均为$0.3$. 这里任取一个, 不妨取为$2.5$.
+
+\item 此时有$3$个误分类点, 误差率为$e_{1} = 3 \times 0.1 = 0.3$. 
+
+\item 计算$h_{1}(\bm{x})$的系数
+\begin{equation*}
+\alpha_{1} = \frac{1}{2} \ln \frac{1 - e_1}{e_1} = 0.4236
+\end{equation*}
+
+\item 更新训练数据的权值分布
+\begin{align*}
+\mathcal{D}_{2}(\bm{x}) & = (w_{21}, \cdots, w_{2i}, \cdots, w_{2,10}) \\ 
+w_{2i} & = \frac{w_{1i}}{Z_1} \exp (- \alpha_1 y_i h_{1}(\bm{x}_i)), i = 1,2, \cdots, 10 \\ 
+\mathcal{D}_{2}(\bm{x}) & = (0.0715, 0.0715, 0.0715, 0.0715, 0.0715, 0.0715, \\ 
+& \quad 0.1666, 0.1666, 0.1666, 0.0715)
+\end{align*}
+
+\end{enumerate}
+
+此时第一轮迭代结束, 可以看出, 取值为“6, 7, 8”的样本被分错了, 所以它们的权值由之前的$0.1$增大到$0.1666$, 而其他样本被分类正确, 所以它们的权值由之前的$0.1$减小到$0.0715$. 此时分类器$\mathrm{sign}[0.4236 h_{1}(\bm{x})]$在训练数据集上有$3$个误分类点.
+
+{\color{red}对$t = 2$, 开始第二轮迭代}
+\begin{enumerate}[(a)]
+\item 在权值分布为$\mathcal{D}_{2}(\bm{x})$的训练数据上, 可计算出阈值$v$取$8.5$时分类误差率达到最低, 即取
+$$
+h_{2}(\bm{x}) = 
+\begin{cases}
+1, & x < 8.5 \\ 
+-1, & x > 8.5
+\end{cases}
+$$
+
+事实上, 若阈值仍取为$2.5$, 即$x < 2.5$时取$1$, $x > 2.5$时取$-1$, 则还是“6, 7, 8”被分错, 误差率为$0.1666 \times 3$. 再比如将阈值取为$5.5$, 即$x > 5.5$时取$1$, $x < 5.5$时取$-1$, 则是“0, 1, 2, 9”被分错, 误差率为$0.0715 \times 3 + 0.0715$. 而将阈值取为$8.5$时, 即$x < 8.5$时取$1$, $x > 8.5$时取$-1$, 则是“3, 4, 5”被分错, 误差率为$0.0715 \times 3$, 此时的误差率最小. 
+
+\item 此时有$3$个误分类点, 误差率为$e_{2} = 3 \times 0.0715 = 0.2143$. 
+
+\item 计算$h_{2}(\bm{x})$的系数
+\begin{equation*}
+\alpha_{2} = \frac{1}{2} \ln \frac{1 - e_2}{e_2} = 0.6496
+\end{equation*}
+
+\item 更新训练数据的权值分布
+\begin{align*}
+\mathcal{D}_{3}(\bm{x}) & = (0.0455, 0.0455, 0.0455, 0.1667, 0.1667, 0.1667, \\ 
+& \quad 0.1060, 0.1060, 0.1060, 0.0455)
+\end{align*}
+
+\end{enumerate}
+
+此时第二轮迭代结束. 分类器$\mathrm{sign}[0.4236 h_{1}(\bm{x}) + 0.6496 h_{2}(\bm{x})]$在训练数据集上有$3$个误分类点.
+
+{\color{red}对$t = 3$, 开始第三轮迭代}
+\begin{enumerate}[(a)]
+\item 在权值分布为$\mathcal{D}_{3}(\bm{x})$的训练数据上, 可计算出阈值$v$取$5.5$时分类误差率达到最低, 即取
+$$
+h_{3}(\bm{x}) = 
+\begin{cases}
+1, & x > 5.5 \\ 
+-1, & x < 5.5
+\end{cases}
+$$
+
+事实上, 若阈值取为$2.5$, 即$x < 2.5$时取$1$, $x > 2.5$时取$-1$, 则还是“6, 7, 8”被分错, 误差率为$0.1060 \times 3$. 若将阈值取为$5.5$, 即$x > 5.5$时取$1$, $x < 5.5$时取$-1$, 则是“0, 1, 2, 9”被分错, 误差率为$0.0455 \times 3 + 0.0455$. 而将阈值取为$8.5$时, 即$x < 8.5$时取$1$, $x > 8.5$时取$-1$, 则是“3, 4, 5”被分错, 误差率为$0.1667 \times 3$, 因此阈值取为$5.5$误差率最低.
+
+\item 此时有$4$个误分类点, 误差率为$e_{3} = 4 \times 0.0455 = 0.1820$. 
+
+\item 计算$h_{3}(\bm{x})$的系数
+\begin{equation*}
+\alpha_{3} = \frac{1}{3} \ln \frac{1 - e_3}{e_3} = 0.7514
+\end{equation*}
+
+\item 更新训练数据的权值分布
+\begin{equation*}
+\mathcal{D}_{3}(\bm{x})  = (0.125, 0.125, 0.125, 0.102,0.102, 0.102, 0.065, 0.065, 0.065, 0.125)
+\end{equation*}
+
+\end{enumerate}
+
+此时第三轮迭代结束, 而且此时分类器$\mathrm{sign}[0.4236 h_{1}(\bm{x}) + 0.6496 h_{2}(\bm{x}) + 0.7514 h_{3}(\bm{x})]$在训练数据集上的误分类点的个数为$0$. 
+
+于是可得最终的分类器为
+\begin{equation*}
+h(\bm{x}) = \mathrm{sign}[0.4236 h_{1}(\bm{x}) + 0.6496 h_{2}(\bm{x}) + 0.7514 h_{3}(\bm{x})]
+\end{equation*}
+
+当然, 我们也可以一开始就规定训练的轮数.
+
+
+\end{mysolution}
+
+
+上面我们介绍了 AdaBoost 算法. 其实一般的 Boosting 算法都是要求学习器能对特定的数据分布进行学习. 这里一般也是通过“重赋权法”(re-weighting)实施的, 即在训练过程的每一轮中, 根据样本分布为每一个训练样本重新赋予一个权重. 我们知道, 很多算法是可以给样本赋予权重的, 但是对于那些无法接受带权样本的基学习算法呢?
+
+这时我们可以通过“重采样法”(re-sampling)来处理, 即在每一轮学习中, 根据样本分布对训练数据重新进行采样, 再用重采样而得的样本集对基学习器进行训练. 其实, 一般而言, “重赋权法”和“重采样法”没有显著的优劣差别.
+
+下面解释一下上面的一个疑问之处, 就是在迭代中, 我们要求误差率$e_{t} \leqslant \frac{1}{2}$, 这其实是检查当前的基学习器是否比随机猜测好. 一旦这个条件不满足, 则当前的基学习器即被抛弃, 并且迭代过程也就终止了. 在此种情形下, 可能初始设置的学习轮数$T$还远未达到, 这就可能导致最终集成中只包含很少的基学习器而性能不佳. 此时一个解决办法是采用上面的“重采样法”, 即在抛弃不满足条件的当前基学习器后, 根据当前分布重新对训练样本进行采样, 再基于新的采样结果重新训练出基学习器, 从而使得学习过程可以持续到预设的$T$轮完成.
+
+AdaBoost 算法中采用的基分类器一般采用简单的决策树, 比如上面例子中的基分类器$x < v$或$x > v$ 就可以看做是一个根节点直接连接两个叶节点的简单决策树, 也就是所谓的决策树桩(decision stump). 当然, 我们也可以采用其他分类器来作为 AdaBoost 算法的基分类器.
+
+
+
+\section{模型的推导}
+\subsection{AdaBoost 变体}
+
+
+
+\subsection{模型推导}
+
+
+\section{关于 AdaBoost 的补充}
+\subsection{前向分布算法}
+推导 AdaBoost 算法还有很多其他途径, 比如可将 AdaBoost 算法看成是模型为加法模型、损失函数为指数函数、学习算法为前向分布算法的二分类学习算法. 为了下面讲述梯度提升的方便, 这里我们介绍一下前向分布算法.
+
+为了能够抽象的讨论, 我们将每一个分类器或者模型记为$b(\bm{x}; \bm{\gamma})$, 称为基函数, 其中$\bm{\gamma}$为基函数的参数. 假设有$T$个基学习器, 考虑加权组合的加法模型(additive model)
+\begin{equation*}
+f(\bm{x}) = \sum_{t=1}^{T} \beta_{t} b(\bm{x}; \bm{\gamma}_{t})
+\end{equation*}
+
+其中用$b(\bm{x}; \bm{\gamma}_{t})$表示第$t$个基学习器, 也可简记为$b_{t}(\bm{x})$, $\bm{\gamma}_{t}$为基函数的模型参数, $\beta_{t}$为基函数的权重系数.
+
+在给定训练样本数据和损失函数$L(y, f(\bm{x}))$的条件下, 学习加法模型$f(\bm{x})$即要估计参数$\beta_{t}$和$\bm{\gamma}_{t}$, 也即最小化如下损失函数
+\begin{equation*}
+\min_{\beta_{t}, \bm{\gamma}_{t}} \sum_{i=1}^{m} L \left( y_{i}, \sum_{t=1}^{T} \beta_{t} b(\bm{x}; \bm{\gamma}_{t}) \right)
+\end{equation*}
+
+这是一个非常复杂的优化问题, 可以采用启发式算法来解决, 具体的说, 可以采用贪心算法. 前向分布算法(forward stagewise algorithm)就是做这个的, 它的思想是: 每一步只学习一个基函数及其系数, 在当前状态下达到最优, 逐步逼近最终问题.
+
+给定训练数据集$D = \{(\bm{x}_1, y_1), (\bm{x}_2, y_2), \cdots, (\bm{x}_{m}, y_m)\}$, 损失函数$L(y, f(\bm{x}))$和基函数集合$\{b(\bm{x}; \bm{\gamma})\}$, 前向分布算法求解加法模型的过程如下:
+\begin{enumerate}[(1)]
+\item 初始化$f_{0}(\bm{x}) = 0$
+
+\item 对$t = 1, 2, \cdots, T$
+\begin{enumerate}[(a)]
+\item 极小化损失函数
+\begin{equation*}
+(\beta_{t}, \bm{\gamma}_{t}) = \arg \min_{\beta, \bm{\gamma}} \sum_{i=1}^{m} L(y_i, f_{m-1}(\bm{x}_i) + \beta b(\bm{x}_i; \bm{\gamma}))
+\end{equation*}
+
+得到参数$\beta_{t}, \bm{\gamma}_{t}$
+
+\item 更新
+\begin{equation*}
+f_{t}(\bm{x}) = f_{t-1}(\bm{x}) + \beta_{t} b(\bm{x}; \bm{\gamma}_{t})
+\end{equation*}
+
+\end{enumerate}
+
+\item 最后得到加法模型
+\begin{equation*}
+f(\bm{x}) = f_{T}(\bm{x}) = \sum_{t=1}^{T} \beta_{t} b(\bm{x}; \bm{\gamma}_{t})
+\end{equation*}
+
+\end{enumerate}
+
+是不是很像优化中迭代求解得步骤? 我感觉真是太像了, 得到下降方向和最优步长, 继而可以更新值. 当然了, 本来这就是优化问题, 所以肯定很像啦.
+
+前向分布算法的巧妙之处在于利用贪心思想, 将同时求解从$t=1$到$T$的所有参数$\beta_{t}, \bm{\gamma}_{t}$的优化问题简化为了逐次求解各个$\beta_{t}, \bm{\gamma}_{t}$的优化问题.
+
+利用前向分布算法可以推导出 AdaBoost 算法, 这里就不多说了, 可以参见李航的《统计学习方法》.
+
+
+\subsection{梯度提升}
+前向分布算法只是给出了一个大体的框架
+\begin{equation*}
+f_{t}(\bm{x}) = f_{t-1}(\bm{x}) + \beta_{t} b(\bm{x}; \bm{\gamma}_{t}) = f_{t-1}(\bm{x}) + \beta_{t} b_{t}(\bm{x})
+\end{equation*}
+
+但没有给出如何具体求出参数$\beta_{t}$和基函数$b_{t}(\bm{x})$的方法. 在一些具体的损失函数(比如平方损失函数)中, 这个优化还是比较容易的, 对于一般的损失函数, 我们可以采用类似于优化中最速下降法的算法, 即梯度提升(Gradient Boosting)方法.
+
+关于梯度提升的一些详细资料可参考其他文献, 比如维基上\url{https://en.wikipedia.org/wiki/Gradient_boosting}就写的不错. 其关键思想是沿着损失函数的负梯度方向选取基函数$b_{t}(\bm{x})$, 然后通过一维线性搜索选取系数$\beta_{t}$. 这对于学过最优化的我们再熟悉不过了. 这里直接给出梯度提升的步骤.
+
+给定训练数据集$D = \{(\bm{x}_1, y_1), (\bm{x}_2, y_2), \cdots, (\bm{x}_{m}, y_m)\}$, 损失函数$L(y, f(\bm{x}))$, 迭代次数$T$, 梯度提升的算法步骤是
+\begin{enumerate}[(1)]
+\item 初始化$f_{0}(\bm{x})$, 比如可取
+\begin{equation*}
+f_{0}(\bm{x}) = \arg \min_{\beta} \sum_{i=1}^{m} L(y_i, \beta)
+\end{equation*}
+
+\item 对$t = 1, 2, \cdots, T$
+\begin{enumerate}[(a)]
+\item 计算损失函数在当前模型的负梯度值作为伪残差值
+\begin{equation*}
+r_{it} = - \left[ \p{}{L(y_i, f(\bm{x}_i))}{f(\bm{x}_i)} \right]_{f(\bm{x}) = f_{t-1}(\bm{x})} , i = 1, 2, \cdots, m
+\end{equation*}
+
+\item 找到最优的基函数$b_{t}(\bm{x})$去拟合伪残差值, 也就是说拟合数据集$\{(\bm{x}_i, r_{it})\}_{i=1}^{m}$
+
+\item 通过线性搜索寻找最优系数$\beta_{t}$, 也就是解如下的一维最优化问题
+\begin{equation*}
+\beta_{t} = \arg \min_{\beta} \sum_{i=1}^{m} L(y_i, f_{t-1}(\bm{x}_i) + \beta b_{t}(\bm{x}_i))
+\end{equation*}
+
+\item 更新模型
+\begin{equation*}
+f_{t}(\bm{x}) = f_{t-1}(\bm{x}) + \beta_{t} b_{t}(\bm{x})
+\end{equation*}
+
+\end{enumerate}
+
+\item 输出最终模型$f(\bm{x}) = f_{T}(\bm{x})$
+
+\end{enumerate}
+
+
+
+
+
+
+\subsection{提升树}
+提升树是以分类树或者回归树为基分类器的提升方法. 目前已经很多次提到过“提升”这个词, 它到底是什么含义呢?
+
+其实, 提升方法就是一种集成学习的方式而已, 它采用加法模型(即基函数的线性组合)与前向分布算法, 将几个弱分类器“提升”为一个强分类器. 以决策树为基函数的提升方法称之为提升树(Boosting Tree). 
+
+梯度提升和决策树结合起来, 便称之为梯度提升决策树(Gradient Boosting Decision Tree, 简记为 GBDT), 网上还有很多其他叫法, 比如 MART(Multiple Additive Regression Tree), GBRT(Gradient Boosting Regression Tree), Tree Net , Boosted Tree等, 其实它们都是一个东西, 就是指把(梯度)提升方法和决策树这两个模型组合起来, 模型组合其实就是集成学习.
+
+
+
+
+\section{Bagging 方法与随机森林}
+上面我们介绍了集成学习的一个代表, 即 Boosting 方法, 并详述了 AdaBoost 算法的过程. 下面我们稍微提一下集成学习的另一个代表, 即 Bagging 方法, 并介绍一下随机森林.
+
+Boosting 方法的特点是个体学习器之间存在强依赖关系, 是必须串行生成的序列化方法. Bagging 方法与之不同, 它是个体学习器之前不存在强依赖关系、可同时生成的并行化方法. Bagging 这个名字由 Bootstrap AGGregatING 缩写而来. 其中 Bootstrap 便是自助采样法.
+
+给定包含$m$个样本的数据集, 我们先随机取出一个样本放入采样集中, 再把该样本放回初始数据集, 使得下次采样时该样本仍有可能被选中, 这样经过$m$次随机采样操作, 我们便得到了含有$m$个样本的采样集, 初始训练集中有的样本在采样集中多次出现, 有的则可能从未出现. 我们在这个采样集上训练出一个模型. 如此不断重复$T$次, 我们可采样出$T$个包含$m$个样本的采样集, 然后基于每个采样集训练出一个基学习器, 再将这些基学习器进行组合(组合的方式有很多, 这里暂且不提), 这就是 Bagging 方法的基本流程.
+
+随机森林(Random Forest, 简称 RF)是 Bagging 方法的一个扩展变体, 它在以决策树为基学习器构建 Bagging 集成的基础上, 进一步在决策树的训练过程中引入了随机属性选择. 
+
+具体来说, 传统决策树在选择划分属性时是在当前节点的属性集合(假设有$d$个属性特征)中选择一个最优属性, 而在随机森林中, 对基决策树的每个节点, 先从该节点的属性集合中随机选择一个包含$k(k << n)$个属性的子集, 然后再从这个子集中选择一个最优属性用于划分, 这里的参数$k$控制了随机性的引入程度: 若令$k = d$, 则基决策树的构建与传统决策树相同; 若令$k = 1$, 则是随机选择一个属性用于划分. 一般情况下, 推荐值为$k = \log_{2} d$. 也有的资料上介绍, 假设样本有$n$个特征, 那么我们直接进行列采样, 也就是随机选取$k$个特征构建决策树, $k$的可取值有$\sqrt{n}, 1 / 2 \sqrt{n}$和$2 \sqrt{n}$.
+
+也就是说, 随机森林通过随机的方式建立了$T$棵树, 因此称为森林. 随机森林简单, 容易实现, 计算开销小, 令人惊奇的是, 它在很多现实任务中表现出强大的性能. 可以看出, 随机森林对 Bagging 方法只做了小改动, 但是与 Bagging 中基学习器的“多样性”仅通过样本扰动(通过对初始训练集采样)而来不同, 随机森林中基学习器的多样性不仅来自样本扰动, 还来自属性扰动, 这就使得最终集成的分类器的泛化性能可通过个体学习器之间的差异度的增加而进一步提升.
+
+
+
+
+
+
+
+
+
+\section{总结}
+\subsection{参考资料}
+\begin{enumerate}[(1)]
+\item 李航的《统计学习方法》, 算法步骤和例子均来自于此.
+
+\item 周志华的《机器学习》, 这个不多说了, 比较周志华是集成学习方面的大牛.
+
+\item 博客: \url{http://blog.csdn.net/v_july_v/article/details/40718799}, 其实内容就是李航的《统计学习方法》, 但是对例子解释的比较清楚. 参考李航的很多, 比如还有这篇: \url{http://blog.csdn.net/dark_scope/article/details/14103983}, 里面加入了自己的 Python 编程.
+
+\item 博客: \url{http://blog.csdn.net/carson2005/article/details/41444289}, 讲述了一些关系, 同时有形象的图形展示.
+
+\item 博客: \url{http://www.36dsj.com/archives/21036}, 对随机森林和梯度提升树作了介绍, 不过原文应该是这个: \url{http://www.cnblogs.com/LeftNotEasy/archive/2011/03/07/1976562.html}.
+
+\item 维基: \url{https://en.wikipedia.org/wiki/Gradient_boosting}, 对梯度提升做了详细介绍.
+\end{enumerate}
+
+
+
+
+
+\begin{thebibliography}{4}
+  \bibitem{1} 李荣华.\emph{偏微分方程数值解法}.高等教育出版社(2010) 
+  \bibitem{2} Zhilin Li,Zhonghua Qiao,Tao Tang.\emph{Numerical Solutions of Partial Differential Equations-An Introduction to Finite Difference and Finite Element Methods}.(2011)
+  \bibitem{3} 孙志忠.\emph{偏微分方程数值解法}.科学出版社(2011)
+  \bibitem{4} 陆金甫 关治.\emph{偏微分方程数值解法}.清华大学出版社(2004)
+  
+\end{thebibliography}
+
+\newpage
+
+\section*{附录}
+
+
+
+
+
+
+
+
+\end{document}

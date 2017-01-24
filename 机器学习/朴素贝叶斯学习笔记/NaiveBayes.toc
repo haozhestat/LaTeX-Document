@@ -1,0 +1,10 @@
+\contentsline {section}{\numberline {1}引入}{3}{section.1}
+\contentsline {section}{\numberline {2}基本模型}{3}{section.2}
+\contentsline {section}{\numberline {3}连续属性与 Laplace 平滑}{7}{section.3}
+\contentsline {subsection}{\numberline {3.1}连续属性}{7}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}Laplace 平滑}{8}{subsection.3.2}
+\contentsline {section}{\numberline {4}关于 Naive Bayes 的补充}{9}{section.4}
+\contentsline {subsection}{\numberline {4.1}Naive Bayes 与 Bayes 判别的区别}{9}{subsection.4.1}
+\contentsline {subsection}{\numberline {4.2}线性判别分析}{9}{subsection.4.2}
+\contentsline {section}{\numberline {5}总结}{11}{section.5}
+\contentsline {subsection}{\numberline {5.1}参考资料}{11}{subsection.5.1}

@@ -1,0 +1,12 @@
+\contentsline {section}{\numberline {1}引入}{3}{section.1}
+\contentsline {section}{\numberline {2}基本模型}{3}{section.2}
+\contentsline {section}{\numberline {3}模型的推导}{9}{section.3}
+\contentsline {subsection}{\numberline {3.1}AdaBoost 变体}{9}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}模型推导}{9}{subsection.3.2}
+\contentsline {section}{\numberline {4}关于 AdaBoost 的补充}{9}{section.4}
+\contentsline {subsection}{\numberline {4.1}前向分布算法}{9}{subsection.4.1}
+\contentsline {subsection}{\numberline {4.2}梯度提升}{10}{subsection.4.2}
+\contentsline {subsection}{\numberline {4.3}提升树}{11}{subsection.4.3}
+\contentsline {section}{\numberline {5}Bagging 方法与随机森林}{11}{section.5}
+\contentsline {section}{\numberline {6}总结}{12}{section.6}
+\contentsline {subsection}{\numberline {6.1}参考资料}{12}{subsection.6.1}

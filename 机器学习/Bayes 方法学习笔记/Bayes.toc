@@ -1,0 +1,10 @@
+\contentsline {section}{\numberline {1}引入}{3}{section.1}
+\contentsline {section}{\numberline {2}贝叶斯统计}{3}{section.2}
+\contentsline {subsection}{\numberline {2.1}贝叶斯推断方法}{3}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}多参数模型}{4}{subsection.2.2}
+\contentsline {section}{\numberline {3}贝叶斯分类}{4}{section.3}
+\contentsline {subsection}{\numberline {3.1}模型预测}{4}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}模型训练}{4}{subsection.3.2}
+\contentsline {section}{\numberline {4}变分贝叶斯}{5}{section.4}
+\contentsline {section}{\numberline {5}总结}{5}{section.5}
+\contentsline {subsection}{\numberline {5.1}参考资料}{5}{subsection.5.1}

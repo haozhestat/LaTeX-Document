@@ -1,0 +1,13 @@
+\contentsline {section}{\numberline {1}引入}{3}{section.1}
+\contentsline {section}{\numberline {2}Softmax 回归模型}{3}{section.2}
+\contentsline {subsection}{\numberline {2.1}数据集}{3}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}基本模型}{3}{subsection.2.2}
+\contentsline {subsection}{\numberline {2.3}参数估计}{4}{subsection.2.3}
+\contentsline {subsection}{\numberline {2.4}参数特点}{6}{subsection.2.4}
+\contentsline {subsection}{\numberline {2.5}模型比较}{8}{subsection.2.5}
+\contentsline {subsubsection}{\numberline {2.5.1}Softmax 回归与 Logistic 回归的关系}{8}{subsubsection.2.5.1}
+\contentsline {subsubsection}{\numberline {2.5.2}Softmax 回归 VS $k$个二元分类器}{8}{subsubsection.2.5.2}
+\contentsline {section}{\numberline {3}编程计算}{9}{section.3}
+\contentsline {section}{\numberline {4}总结}{12}{section.4}
+\contentsline {subsection}{\numberline {4.1}参考资料}{12}{subsection.4.1}
+\contentsline {subsection}{\numberline {4.2}感悟思考}{13}{subsection.4.2}

@@ -1,0 +1,14 @@
+\contentsline {section}{\numberline {1}基本 Logistic 回归}{3}{section.1}
+\contentsline {subsection}{\numberline {1.1}数据集}{3}{subsection.1.1}
+\contentsline {subsection}{\numberline {1.2}基本模型}{3}{subsection.1.2}
+\contentsline {subsection}{\numberline {1.3}参数估计}{5}{subsection.1.3}
+\contentsline {subsection}{\numberline {1.4}决策边界}{11}{subsection.1.4}
+\contentsline {section}{\numberline {2}正则化}{13}{section.2}
+\contentsline {subsection}{\numberline {2.1}过拟合与正则化}{13}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}统计学角度看问题}{14}{subsection.2.2}
+\contentsline {section}{\numberline {3}贝叶斯 Logistic 回归}{15}{section.3}
+\contentsline {section}{\numberline {4}变分贝叶斯 Logistic 回归}{16}{section.4}
+\contentsline {subsection}{\numberline {4.1}变分贝叶斯一般框架}{16}{subsection.4.1}
+\contentsline {subsection}{\numberline {4.2}变分贝叶斯Logistic回归}{18}{subsection.4.2}
+\contentsline {section}{\numberline {5}总结}{19}{section.5}
+\contentsline {subsection}{\numberline {5.1}参考资料}{19}{subsection.5.1}

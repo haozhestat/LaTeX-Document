@@ -1,0 +1,10 @@
+\contentsline {section}{\numberline {1}引入}{3}{section.1}
+\contentsline {section}{\numberline {2}CNN 基本模型}{3}{section.2}
+\contentsline {subsection}{\numberline {2.1}图像卷积和池化}{3}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}局部感知}{4}{subsection.2.2}
+\contentsline {subsection}{\numberline {2.3}权值共享}{6}{subsection.2.3}
+\contentsline {subsection}{\numberline {2.4}多卷积核}{6}{subsection.2.4}
+\contentsline {subsection}{\numberline {2.5}Dropout}{6}{subsection.2.5}
+\contentsline {section}{\numberline {3}反向传播推导}{7}{section.3}
+\contentsline {section}{\numberline {4}总结}{7}{section.4}
+\contentsline {subsection}{\numberline {4.1}参考资料}{7}{subsection.4.1}

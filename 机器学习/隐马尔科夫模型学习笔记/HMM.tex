@@ -1,0 +1,267 @@
+%!TEX program = xelatex
+\documentclass[a4paper,UTF8]{ctexart}
+\usepackage[unicode=true,colorlinks,urlcolor=blue,linkcolor=blue,bookmarksnumbered=true]{hyperref}
+\usepackage{latexsym,amssymb,amsmath,amsbsy,amsopn,amstext,amsthm,amsxtra,color,multicol,bm,calc,ifpdf}
+\usepackage{graphicx}
+\usepackage{diagbox}   % 绘制表格斜线
+\usepackage{enumerate}
+\usepackage{epstopdf}
+\usepackage{fancyhdr}
+\usepackage{subfigure}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{makeidx}
+\usepackage{xcolor} 
+\usepackage{fontspec}                            % 建立索引宏包
+\graphicspath{{figures/}}  % 设置图片搜索路径
+\theoremstyle{plain} \newtheorem{theorem}{定理}[section]
+\theoremstyle{plain} \newtheorem{definition}{定义}[section]
+\theoremstyle{plain} \newtheorem{lemma}{引理}[section]
+\theoremstyle{plain} \newtheorem{proposition}{命题}[section]
+\theoremstyle{plain} \newtheorem{example}{例}[section]
+\theoremstyle{plain} \newtheorem{remark}{注}[section]
+\theoremstyle{plain} \newtheorem{corollary}{推论}[section]
+\newfontfamily\courier{Courier New}
+\lstset{linewidth=1.1\textwidth,
+        numbers=left, %设置行号位置 
+        basicstyle=\small\courier,
+        numberstyle=\tiny\courier, %设置行号大小  
+        keywordstyle=\color{blue}\courier, %设置关键字颜色  
+        %identifierstyle=\bf，
+        commentstyle=\it\color[cmyk]{1,0,1,0}\courier, %设置注释颜色 
+        stringstyle=\it\color[RGB]{128,0,0}\courier,
+        %framexleftmargin=10mm,
+        frame=single, %设置边框格式  
+        backgroundcolor=\color[RGB]{245,245,244},
+        %escapeinside=``, %逃逸字符(1左面的键)，用于显示中文  
+        breaklines, %自动折行  
+        extendedchars=false, %解决代码跨页时，章节标题，页眉等汉字不显示的问题  
+        xleftmargin=2em,xrightmargin=2em, aboveskip=1em, %设置边距  
+        tabsize=4, %设置tab空格数  
+        showspaces=false %不显示空格  
+        basicstyle=\small\courier
+       }  
+\newenvironment{mysolution}{{\color{blue} 解}： }{{\color{magenta}\qed}}
+\newcommand\diff{\,{\mathrm d}} %定义微分d
+\newcommand{\p}[3]{\frac{\partial^{#1}#2}{\partial{#3}^{#1}}}  %定义求偏导算子
+\newcommand{\ucite}[1]{\textsuperscript{\cite{#1}}}  %参考文献引用：上标用\ucite{ }，文中用\cite{ }
+
+\begin{document}
+\title{
+\includegraphics[width=0.65\textwidth]{onepiece.pdf}\\
+\vspace{2em}
+\textbf{隐马尔科夫模型学习笔记}}
+\author{\emph{李向阳} \quad {\color{blue} d1142845997@gmail.com} }
+\date{}
+
+
+\maketitle
+\thispagestyle{empty}
+
+\newpage
+
+
+\tableofcontents
+
+\newpage
+
+\section{引入}
+隐马尔可夫模型(Hidden Markov Model, HMM)是一个统计模型, 它用来描述一个含有未知参数的马尔科夫过程. 其特点是从可观察到的参数中确定该过程的隐含参数, 然后利用这些参数作进一步的分析.
+
+在正常的马尔可夫模型中, 状态对于观察者来说是直接可见的, 此时状态之间的转移概率便是全部的模型参数. 而在隐马尔可夫模型中, 状态并不是直接可见的, 但受状态影响的某些变量则是可见的. 每一个状态在可能输出的符号上都有一个概率分布, 因此输出符号的序列能够透露出状态序列的一些信息.
+
+本质上, HMM 是描述由隐藏的马尔可夫链随机生成观测序列的过程, 属于生成模型.
+
+
+\section{模型介绍}
+隐马尔可夫模型是关于时序的概率模型, 描述由一个隐藏的马尔可夫链随机生成不可观测的状态随机序列, 再由各个状态生成一个观测而产生观测随机序列的过程. 隐藏的马尔可夫链随机生成的状态的序列称为状态序列(state sequence), 通常假设状态变量是隐藏的、不可观测的. 每个状态生成一个观测, 而由此产生的观测的随机序列, 称为观测序列(observation sequence). 序列的每一个位置又可看做一个时刻. 
+
+下面用记号来描述一下, 对于有略微强迫症的人来说, 记号一直是一件令人蛋疼的事情, 因为很多资料中的记号都不大相同. HMM 模型也是一样, 这里我采用李航《统计学习方法》中的记号, 并尽量与之前的记号保持一致.
+
+设$I$是长度为$T$的状态序列, $O$是对应的观测序列.
+\begin{equation*}
+I = (i_1, i_2, \cdots, i_T), O = (o_1, o_2, \cdots, o_T)
+\end{equation*}
+
+状态序列和观测序列都是有各自的取值空间的, 设$Q$是所有可能的状态的集合, 其元素个数为$N$, 设$V$是所有可能的观测的集合, 其元素个数为$M$.
+\begin{equation*}
+Q = \{q_1, q_2, \cdots, q_N\}, V = \{v_1, v_2, \cdots, v_M\}
+\end{equation*}
+
+设矩阵$A$是状态转移概率矩阵, 即$A = (a_{ij})_{N \times N}$, 其中
+\begin{equation*}
+a_{ij} = P(i_{t+1} = q_{j} | i_{t} = q_{i}), i, j = 1, 2, \cdots, N
+\end{equation*}
+
+也就是说$a_{ij}$表示在时刻$t$处于状态$q_{i}$的条件下在时刻$t+1$转移到状态$q_{j}$的概率.
+
+设矩阵$B$是观测概率矩阵, 即$B = (b_{jk})_{N \times M}$, 其中
+\begin{equation*}
+b_{jk} = P(o_{t} = v_{k} | i_{t} = q_{j}), j = 1,2, \cdots, N, k = 1,2, \cdots,M
+\end{equation*}
+
+也就是说$b_{jk}$表示在时刻$t$处于状态$q_{j}$的条件下生成观测$v_{k}$的概率.
+
+设$\bm{\pi}$是初始状态的概率向量, 即$\bm{\pi} = (\pi_i)$, 其中
+\begin{equation*}
+\pi_{i} = P(i_{1} = q_{i}), i = 1,2,\cdots,N
+\end{equation*}
+
+也就是说$\pi_{i}$表示时刻$t=1$时处于状态$q_{i}$的概率.
+
+隐马尔可夫模型由初始状态概率向量$\bm{\pi}$、状态转移概率矩阵$A$和观测概率矩阵$B$完全决定, 其中$\bm{\pi}$和$A$决定状态序列, $B$决定观测序列, 因此, 隐马尔科夫模型$\lambda$可以用三元符号表示, 即
+\begin{equation*}
+\lambda = (A, B, \bm{\pi})
+\end{equation*}
+
+$A, B, \bm{\pi}$称为隐马尔可夫模型的三要素.
+
+下面举一个具体的例子, 这个知乎上有很多, 可见\url{https://www.zhihu.com/question/20962240}. 这里还是用李航《统计学习方法》上摸球的例子.
+
+假设有$4$个盒子, 每个盒子里都装有红白两种颜色的球, 盒子里的红白球数可见表
+\begin{table}[!htb]
+\centering
+\caption{各盒子的红白球数}
+\label{box}
+\begin{tabular}{ccccc}
+  \hline
+    % after \: \hline or \cline{col1-col2} \cline{col3-col4} ...
+    \textbf{盒子} & \textbf{ID1} & \textbf{ID2} & \textbf{ID3} & \textbf{ID4} \\
+    \hline
+    红球数   &  5  &  3  & 6 & 8 \\
+    \hline
+    白球数   &  5  &  7  & 4 & 2 \\
+  \hline
+\end{tabular}
+\end{table}
+
+按照下面的方法摸球, 产生一个球的颜色的观测序列: 开始, 从$4$个盒子中随机(等概论)的选取一个盒子, 从这个盒子中随机摸出一个球, 记录其颜色后, 放回; 然后, 从当前盒子中转移到下一个盒子, 转移规则是: 如果当前盒子是盒子1, 那么下一个盒子一定是盒子2, 如果当前盒子是盒子2或者3, 那么分别以概率$0.4$和$0.6$转移到左边或右边的盒子, 如果当前是盒子4, 那么各以$0.5$的概率停留在盒子4或转移到盒子3; 确定转移的盒子后, 再从这个盒子中随机摸出一个球, 记录其颜色, 放回; 如此下去, 不断重复. 比如进行了$5$次, 得到了一个球的颜色的观测序列:
+\begin{equation*}
+O = \{\textrm{红, 红, 白, 白, 红}\}
+\end{equation*}
+
+在这个过程中, 假设观察者只能观测到球的颜色的序列, 观测不到球是从哪个盒子中取出来的, 即观测不到盒子的序列.
+
+本例子中, 盒子的序列便是状态序列, 而球的颜色的序列便是观测序列, 前者是隐藏的, 只有后者是可观测的. 根据所给条件, 可以明确状态集合、观测集合、序列长度和模型的三要素.
+
+盒子对应状态, 状态的集合是
+\begin{equation*}
+Q = \{\textrm{盒子1, 盒子2, 盒子3, 盒子4}\}, N = 4
+\end{equation*}
+
+球的颜色对应观测序列, 观测的集合是
+\begin{equation*}
+V = \{\textrm{红, 白}\}, M = 2
+\end{equation*}
+
+本次具体的状态序列和观测序列的长度为$T = 5$, 其中状态序列未知, 而观测序列为
+\begin{equation*}
+O = \{\textrm{红, 红, 白, 白, 红}\}
+\end{equation*}
+
+初始概率分布为
+\begin{equation*}
+\bm{\pi} = (0.25, 0.25, 0.25, 0.25)^{T}
+\end{equation*}
+
+状态转移概率矩阵为
+$$
+A = 
+\begin{bmatrix}
+0 & 1 & 0 & 0 \\ 
+0.4 & 0 & 0.6 & 0 \\ 
+0 & 0.4 & 0 & 0.6 \\ 
+0 & 0 & 0.5 & 0.5
+\end{bmatrix}
+$$
+
+观测概率矩阵为
+$$
+B = 
+\begin{bmatrix}
+0.5 & 0.5 \\ 
+0.3 & 0.7 \\ 
+0.6 & 0.4 \\ 
+0.8 & 0.2 
+\end{bmatrix}
+$$
+
+这便是本例子的模型三要素.
+
+那么隐马尔可夫模型有什么用呢? 它主要解决$3$类基本问题.
+\begin{enumerate}[(1)]
+\item 解码问题, 也称为预测问题. 给定模型$\lambda = (A, B, \bm{\pi})$和观测序列, 求最有可能的状态序列. 
+
+这个问题有两种解法, 会给出两个不同的答案. 每个答案都合理, 因为答案的意义不太一样.
+第一种解法是求最大似然路径, 就是求一串状态序列, 使得其产生观测结果序列的概率最大. 第二种解法, 就不是求一组状态序列了, 而是求出每次的观测结果分别是某种状态产生的概率.
+
+\item 概率计算问题. 给定模型$\lambda = (A, B, \bm{\pi})$和观测序列, 计算在模型$\lambda$下观测序列出现的概率.
+
+这个问题的意义看似不大, 毕竟我们的观测结果很多时候都对应了一个比较大的概率. 这个问题的目的在于, 检测观测到的结果和已知的模型是否吻合. 如果很多次结果都对应了比较小的概率, 那么就说明我们已知的模型很有可能是错的.
+
+\item 学习问题. 已知观测序列, 要估计出模型$\lambda = (A, B, \bm{\pi})$的参数.
+
+这个问题就很重要了, 因为这是最常见的情况. 很多时候我们只有可见结果, 不知道 HMM 模型里面的参数, 我们需要从可见结果中估计出这些参数.
+
+\end{enumerate}
+
+
+
+
+
+
+
+
+
+\section{关于 HMM 的补充}
+
+
+
+
+
+
+
+
+
+
+
+
+\section{总结}
+\subsection{参考资料}
+\begin{enumerate}[(1)]
+\item 李航的《统计学习方法》
+
+\item 周志华的《机器学习》
+
+\item 维基: \url{https://zh.wikipedia.org/wiki/%E9%9A%90%E9%A9%AC%E5%B0%94%E5%8F%AF%E5%A4%AB%E6%A8%A1%E5%9E%8B}
+
+\item 知乎: \url{https://www.zhihu.com/question/20962240}, 有非常形象的例子.
+
+
+
+\end{enumerate}
+
+
+
+
+
+\begin{thebibliography}{4}
+  \bibitem{1} 李荣华.\emph{偏微分方程数值解法}.高等教育出版社(2010) 
+  \bibitem{2} Zhilin Li,Zhonghua Qiao,Tao Tang.\emph{Numerical Solutions of Partial Differential Equations-An Introduction to Finite Difference and Finite Element Methods}.(2011)
+  \bibitem{3} 孙志忠.\emph{偏微分方程数值解法}.科学出版社(2011)
+  \bibitem{4} 陆金甫 关治.\emph{偏微分方程数值解法}.清华大学出版社(2004)
+  
+\end{thebibliography}
+
+\newpage
+
+\section*{附录}
+
+
+
+
+
+
+
+
+\end{document}
