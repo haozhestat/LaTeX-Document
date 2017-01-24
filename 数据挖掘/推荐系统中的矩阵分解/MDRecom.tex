@@ -1,0 +1,416 @@
+%!TEX program = xelatex
+\documentclass[a4paper,UTF8]{ctexart}
+\usepackage[unicode=true,colorlinks,urlcolor=blue,linkcolor=blue,bookmarksnumbered=true]{hyperref}
+\usepackage{latexsym,amssymb,amsmath,amsbsy,amsopn,amstext,amsthm,amsxtra,color,multicol,bm,calc,ifpdf}
+\usepackage{graphicx}
+\usepackage{diagbox}   % 绘制表格斜线
+\usepackage{enumerate}
+\usepackage{epstopdf}
+\usepackage{fancyhdr}
+\usepackage{subfigure}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{makeidx}
+\usepackage{xcolor} 
+\usepackage{fontspec}                            % 建立索引宏包
+\graphicspath{{figures/}}  % 设置图片搜索路径
+\theoremstyle{plain} \newtheorem{theorem}{定理}[section]
+\theoremstyle{plain} \newtheorem{definition}{定义}[section]
+\theoremstyle{plain} \newtheorem{lemma}{引理}[section]
+\theoremstyle{plain} \newtheorem{proposition}{命题}[section]
+\theoremstyle{plain} \newtheorem{example}{例}[section]
+\theoremstyle{plain} \newtheorem{remark}{注}[section]
+\theoremstyle{plain} \newtheorem{corollary}{推论}[section]
+\newfontfamily\courier{Courier New}
+\lstset{linewidth=1.1\textwidth,
+        numbers=left, %设置行号位置 
+        basicstyle=\small\courier,
+        numberstyle=\tiny\courier, %设置行号大小  
+        keywordstyle=\color{blue}\courier, %设置关键字颜色  
+        %identifierstyle=\bf，
+        commentstyle=\it\color[cmyk]{1,0,1,0}\courier, %设置注释颜色 
+        stringstyle=\it\color[RGB]{128,0,0}\courier,
+        %framexleftmargin=10mm,
+        frame=single, %设置边框格式  
+        backgroundcolor=\color[RGB]{245,245,244},
+        %escapeinside=``, %逃逸字符(1左面的键)，用于显示中文  
+        breaklines, %自动折行  
+        extendedchars=false, %解决代码跨页时，章节标题，页眉等汉字不显示的问题  
+        xleftmargin=2em,xrightmargin=2em, aboveskip=1em, %设置边距  
+        tabsize=4, %设置tab空格数  
+        showspaces=false %不显示空格  
+        basicstyle=\small\courier
+       }  
+\newenvironment{mysolution}{{\color{blue} 解}： }{{\color{magenta}\qed}}
+\newcommand\diff{\,{\mathrm d}} %定义微分d
+\newcommand{\p}[3]{\frac{\partial^{#1}#2}{\partial{#3}^{#1}}}  %定义求偏导算子
+\newcommand{\ucite}[1]{\textsuperscript{\cite{#1}}}  %参考文献引用：上标用\ucite{ }，文中用\cite{ }
+
+\begin{document}
+\title{
+\includegraphics[width=0.65\textwidth]{onepiece.pdf}\\
+\vspace{2em}
+\textbf{推荐系统中的矩阵分解}}
+\author{\emph{李向阳} \quad \color{blue}{d1142845997@gmail.com}}
+\date{}
+
+
+\maketitle
+\thispagestyle{empty}
+
+\newpage
+
+
+\tableofcontents
+
+\newpage
+
+\section{引入}
+这一次继续说推荐算法.
+
+前面我们已经介绍了协同过滤推荐算法,并知道了推荐算法的框架其实就是一个评分矩阵, 而我们的主要目的便是“补齐”这个评分矩阵.既然是矩阵, 自然有很多矩阵的办法可以解决这个问题, 比如矩阵分解. 我们已经学过矩阵分析这门课, 所以理论基础不用多说, 我们直接讲推荐算法.
+
+假设样本集中有$U$个用户(User), 有$I$个物品(Item), 设用户$u$对物品$i$的评分为$r_{ui}$, 评分矩阵$R = (r_{ui})_{U \times I}$. 我们知道, 评分矩阵$R$是不完整的, 我们的目的便是合理的补全这个矩阵.
+
+
+\section{矩阵分解模型}
+\subsection{SVD 基本模型}
+设矩阵$R_{U \times I}$的秩为$K$, 即$\mathrm{rank}(R) = K$, 那么由满秩分解定理知, 存在矩阵$P_{U \times K}$和$Q_{K \times I}$, 使得
+\begin{equation*}
+R_{U \times I} = P_{U \times K} \cdot Q_{K \times I}
+\end{equation*}
+
+其中$\mathrm{rank}(P) = \mathrm{rank}(Q) = K$.
+
+所谓矩阵分解模型, 便是利用评分矩阵$R$的已知评分来估计矩阵$P$和$Q$, 即使得$P$和$Q$相乘的结果能够最好的拟合已知的评分,然后我们就用$P$乘$Q$的结果矩阵作为预测的评分矩阵, 那么所有未知的评分也就知道了.或者说, 任何一个未知的就可以用$P$的某一行乘上$Q$的某一列得到了, 比如要预测用户$u$对物品$i$的评分, 那么我们可以用$P$矩阵的第$u$行乘上$Q$矩阵的第$i$列.
+\begin{equation*}
+\hat{r}_{ui} = p_{u}^{T} q_{i}
+\end{equation*}
+
+这里$p_{u}$和$q_{i}$表示向量, 本应该用粗体表示, 但是为了方便书写, 而且这不像机器学习中的很多算法记号容易搞混, 本算法的记号还是很容易区分的, 所以写的就比较随意了.
+
+总之, 我们的目的便是估计出矩阵$P$和$Q$.
+
+\subsection{潜在因子模型与非负矩阵分解}
+其实矩阵分解的思想我们在协同推荐算法中一种接触到了, 在那里, 我们实际上不正是通过用户的相似度矩阵再乘以评分向量矩阵得到预测的评分吗?
+
+此外,还有一类推荐算法叫做潜在因子(Latent Factor)算法或者隐语义模型.它是什么呢?
+
+潜在因子算法也是把评分矩阵$R$满秩分解为两个矩阵$W$和$H$的乘积, 其中$W(i,j)$被解释为用户$i$属于类别$j$的权重, $H(a, b)$被解释为物品$b$属于类别$a$的权重.
+
+我们以音乐推荐为例具体阐述一下, 该例子来自知乎.
+
+这种算法的思想是:每个用户都有自己的偏好, 比如用户$u$喜欢的音乐特征有小清新、钢琴伴奏、王菲等, 这些特征我们不知道, 称为潜在因子.如果一首歌带有这些特征, 我们就将这首歌推荐给用户$u$.也就是说, 我们是用特征(潜在因子)去连接用户和音乐. 每个人对不同的特征偏好不同, 而每首歌包含的特征也不一样, 我们希望找到如下两个矩阵:
+\begin{enumerate}[(1)]
+\item 用户-潜在因子矩阵$Q$
+
+其表示不同的用户对不同特征的偏好程度, 比如下表
+\begin{table}[!htb]
+\centering
+\caption{用户-潜在因子矩阵}
+\label{userfator}
+\begin{tabular}{c|c|c|c|c|c}
+  \hline
+    % after \: \hline or \cline{col1-col2} \cline{col3-col4} ...
+    \textbf{用户/特征} & \textbf{小清新} & \textbf{吉他伴奏} & \textbf{优雅} & \textbf{伤感}  & \textbf{五月天} \\
+    \hline
+    张三  & 0.6 & 0.8 & 0.1 & 0.1 & 0.7 \\
+    \hline
+    李四  & 0.1 & 0   & 0.9 & 0.1 & 0.2 \\
+    \hline
+    王五  & 0.5 & 0.7 & 0.9 & 0.9 & 0   \\
+  \hline
+\end{tabular}
+\end{table}
+
+\item 潜在因子-音乐矩阵$P$
+
+其表示每种音乐含有各种元素的成分, 比如下表中表示音乐A是一个偏小清新的音乐, 含有小清新这个特征的成分是$0.9$, 吉他伴奏的成分是$0.1$, 优雅的成分是$0.2 \cdots$
+\begin{table}[!htb]
+\centering
+\caption{潜在因子-音乐矩阵}
+\label{fatoritem}
+\begin{tabular}{c|c|c|c|c|c}
+  \hline
+    % after \: \hline or \cline{col1-col2} \cline{col3-col4} ...
+    \textbf{音乐/特征} & \textbf{小清新} & \textbf{吉他伴奏} & \textbf{优雅} & \textbf{伤感} & \textbf{五月天} \\
+    \hline
+    音乐A & 0.9 & 0.1 & 0.2 & 0.4 & 0 \\
+    \hline
+    音乐B & 0.5 & 0.6 & 0.1 & 0.9 & 1 \\
+    \hline
+    音乐C & 0.1 & 0.2 & 0.5 & 0.1 & 0 \\
+    \hline
+    音乐D & 0   & 0.6 & 0.1 & 0.2 & 0 \\ 
+  \hline
+\end{tabular}
+\end{table}
+
+
+\end{enumerate}
+
+利用这两个矩阵, 我们就可以得出张三对音乐A 的预测评分是: 张三对小清新的偏好程度 * 音乐A 含有小清新的成分 + 张三对吉他伴奏的偏好程度 * 音乐A 含有吉他伴奏的成分 + 张三对优雅的偏好程度 * 音乐A 含有优雅的成分 + $\cdots$, 如下
+\begin{equation*}
+0.6 \times 0.9 + 0.8 \times 0.1 + 0.1 \times 0.2 + 0.1 \times 0.4 + 0.7 \times 0 = 0.68
+\end{equation*}
+
+每个人对任何一首歌的预期评分都可以这样计算, 最终可得预测评分矩阵
+\begin{table}[!htb]
+\centering
+\caption{预测评分矩阵}
+\label{predmatrix}
+\begin{tabular}{c|c|c|c|c}
+  \hline
+    % after \: \hline or \cline{col1-col2} \cline{col3-col4} ...
+    \textbf{用户 / 音乐} & \textbf{音乐A} & \textbf{音乐B} & \textbf{音乐C} & \textbf{音乐D} \\
+    \hline
+    张三  & 0.68 & {\color{red} 1.58} & 0.28 & 0.51 \\
+    \hline
+    李四  & 0.31 & 0.43 & {\color{red} 0.47} & 0.11 \\
+    \hline
+    王五  & 1.06 & {\color{red} 1.57} & 0.73 & 0.69 \\
+  \hline
+\end{tabular}
+\end{table}
+
+实际上就是
+\begin{equation*}
+\hat{R} = Q \cdot P^{T}
+\end{equation*}
+
+由预测评分矩阵可知, 我们应该给张三推荐音乐B, 对李四推荐音乐C, 对王五推荐音乐B.
+
+这就是潜在因子模型的一个具体的解释. 可以看到, 关键还是要得到矩阵$P$和$Q$, 下面我们就回到矩阵分解的模型, 来看参数估计.
+
+\subsection{参数估计}
+如何估计矩阵$P = (p_{uk})$和$Q = (q_{ki})$呢?
+
+我们还是采用最经典的最小二乘估计, 即真实值与预测值的误差为
+\begin{equation*}
+e_{ui} = r_{ui} - \hat{r}_{ui}
+\end{equation*}
+
+我们把总的误差平方和作为损失函数:
+\begin{equation*}
+\mathcal{L} = \frac{1}{2} SSE = \frac{1}{2} \sum_{u,i} e_{ui}^2 = \frac{1}{2} \sum_{u,i} \left( r_{ui} - \sum_{k=1}^{K} p_{uk} q_{ki} \right)^2
+\end{equation*}
+
+上式中的求和是针对样本集中那些非零的$r_{ui}$的.
+
+具体计算, 还是老办法, 即梯度下降法.
+
+我们要估计的是矩阵$P$和$Q$的所有元素$p_{uk}$和$q_{ki}, u = 1,2,\cdots,U, k = 1,2,\cdots,K, i = 1,2,\cdots,I$.
+
+下面来求导数, 先看单个样本, 即$SSE = e_{ui}^2$, 可得
+\begin{align*}
+\p{}{\mathcal{L}}{p_{uk}} & = \frac{1}{2} \cdot 2 e_{ui} \cdot \p{}{e_{ui}}{p_{uk}} \\ 
+& = e_{ui} \cdot (- q_{ki}) \\ 
+& = - e_{ui} q_{ki}
+\end{align*}
+
+同理可得
+\begin{equation*}
+\p{}{\mathcal{L}}{q_{ki}} = - e_{ui} p_{uk} 
+\end{equation*}
+
+因此, 随机梯度下降的更新公式为
+\begin{align*}
+p_{uk} & := p_{uk} - \eta (- e_{ui} q_{ui}) = p_{uk} + \eta e_{ui} q_{ki} \\ 
+q_{ki} & := q_{ki} - \eta (- e_{ui} p_{uk}) = q_{ki} + \eta e_{ui} p_{uk}
+\end{align*}
+
+相应的, 批梯度下降的更新公式为
+\begin{align*}
+p_{uk} & := p_{uk} + \eta \sum_{u,i} e_{ui} q_{ki} \\ 
+q_{ki} & := q_{ki} + \eta \sum_{u,i} e_{ui} p_{uk}
+\end{align*}
+
+其中$\eta$为步长, 也称学习速率, 关于随机梯度下降(SVD)与批梯度下降, 已经在机器学习中线性回归中提过了. 随机性可以带来很多好处, 比如有利于避免局部最优解, 所以一般使用随机梯度下降法.
+
+利用更新式不断迭代到收敛, 就可以得到我们想要估计的参数了.
+
+
+\subsection{正则化}
+同机器学习中的很多模型一样, 矩阵分解模型也可能过拟合, 所以要对参数施加惩罚来正则化, 由于矩阵$P$和$Q$中的所有元素都是变量, 所以对它们都施加惩罚, 即构造损失函数如下:
+\begin{align*}
+\mathcal{L} & = \frac{1}{2} \sum_{u,i} e_{ui}^2 + \frac{1}{2} \lambda \sum_{u} ||p_{u}||^2 + \frac{1}{2} \lambda \sum_{i} ||q_{i}||^2 \\ 
+& = \frac{1}{2} \sum_{u,i} e_{ui}^2 + \frac{1}{2} \lambda \sum_{u=1}^{U} \sum_{k=1}^{K} p_{uk}^2 + \frac{1}{2} \lambda \sum_{i=1}^{I} \sum_{k=1}^{K} q_{ki}^2
+\end{align*}
+
+其中$\lambda$为惩罚参数, 对单个样本计算导数可得
+\begin{align*}
+\p{}{\mathcal{L}}{p_{uk}} & = - e_{ui} q_{ki} + \lambda p_{uk} \\ 
+\p{}{\mathcal{L}}{q_{ik}} & = - e_{ui} p_{uk} + \lambda q_{ik}
+\end{align*}
+
+因此, 正则化后的随机梯度下降(RSVD)更新公式为
+\begin{align*}
+p_{uk} & := p_{uk} + \eta (e_{ui} q_{ki} - \lambda p_{uk}) \\ 
+q_{ki} & := q_{ki} + \eta (e_{ui} p_{uk} - \lambda q_{ik})
+\end{align*}
+
+以上计算都还是非常简单的(相对于机器学习中的很多模型来说), 不断迭代便可以得到我们的解了.
+
+
+\section{矩阵分解模型的推广}
+关于矩阵分解推荐算法的变种太多了, 叫法也不统一, 在预测的式子上加点参数(又称为偏置)又会出来一个名称, 下面简要介绍几个变种.
+
+我们知道矩阵分解基本模型的预测式子如下
+\begin{equation*}
+\hat{r}_{ui} = p_{u}^{T} q_{i}
+\end{equation*}
+
+以下方法都是从这个预测式子上做推广的.
+
+\subsection{RSVD 模型}
+这里的RSVD 不是指正则化的随机梯度下降, 而是改进(修正)后的SVD 分解模型.
+
+由于用户对物品的评分不仅取决于用户和商品间的某种关系, 还取决于用户和商品独有的性质, Koren 把 基本 SVD 的预测公式改为
+\begin{equation*}
+\hat{r}_{ui} = \mu + b_{u} + b_{i} + p_{u}^{T} q_{i}
+\end{equation*}
+
+其中第一项为总的平均分, $b_{u}$为用户$u$的属性值, $b_{i}$为商品$i$的属性值. 也就是说, 模型中不再只有矩阵$P$和$Q$两个参数, 还加入了$b_{u}$和$b_{i}$两个变量, 也是需要求解的参数.
+
+新加入的参数同样需要惩罚, 因此损失函数变为
+\begin{align*}
+\mathcal{L} & = \frac{1}{2} \sum_{u,i} e_{ui}^2 + \frac{1}{2} \lambda \sum_{u} ||p_u||^2 + \frac{1}{2} \lambda \sum_{i} ||q_i||^2 + \frac{1}{2} \lambda \sum_{u} b_{u}^2 + \frac{1}{2} \sum_{i} b_{i}^2 \\ 
+& = \frac{1}{2} \sum_{u,i} \left(r_{ui} - \mu - b_{u} - b_{i} - \sum_{k=1}^{K} p_{uk} q_{ki} \right)^2 + \frac{1}{2} \lambda \sum_{u} ||p_u||^2 + \frac{1}{2} \lambda \sum_{i} ||q_i||^2 \\ 
+& \qquad + \frac{1}{2} \lambda \sum_{u} b_{u}^2 + \frac{1}{2} \sum_{i} b_{i}^2 
+\end{align*}
+
+可以看出, 损失函数$\mathcal{L}$对$p_{uk}$和$q_{ik}$的偏导数都没有变化, 不过此时模型中多了$b_u$和$b_i$参数, 我们同样需要求出其更新式.还是以单个样本计算, 可得
+\begin{align*}
+\p{}{\mathcal{L}}{b_u} & = - e_{ui} + \lambda b_{u} \\ 
+\p{}{\mathcal{L}}{b_i} & = - e_{ui} + \lambda b_{i}
+\end{align*}
+
+因此其随机梯度下降更新式为
+\begin{align*}
+b_{u} & := b_{u} + \eta (e_{ui} - \lambda b_{u}) \\ 
+b_{i} & := b_{i} + \eta (e_{ui} - \lambda b_{i})
+\end{align*}
+
+有了参数更新式, 就可以不断迭代求解了.
+
+
+\subsection{ASVD 模型}
+全称叫Asymmetric-SVD, 即非对称SVD.
+
+我们说推荐算法的大致框架是评分矩阵, 不过, 有时, 人们可能只是浏览过某个商品但没有评分(比如说我经常干这种事, 主要是懒), 而用户的浏览记录本身就能反映用户的喜好. 所以除了评分矩阵以外, 如果能考虑到浏览记录, 模型的预测性能更好. 
+
+本篇文章主要参考自博客\url{http://blog.csdn.net/zhongkejingwang/article/details/43083603}, 不过看到这个算法时感觉记号没有讲清楚, 我也没有深究, 但是先暂时记录了下来.
+
+ASVD 的预测式子为
+\begin{equation*}
+\hat{r}_{ui} = \mu + b_{u} + b_{i} + q_{i}^{T} \left( |R(u)|^{-\frac{1}{2}} \sum_{j \in R(u)} (r_{uj} - \mu - b_{u} - b_{j}) x_{j} + |N(u)|^{-\frac{1}{2}} \sum_{j \in N(u)} y_{j} \right)
+\end{equation*}
+
+其中$R(u)$表示用户$u$评过分的物品集合, $N(u)$表示用户$u$浏览过但没有评过分的物品集合, $x_{i}$和$y_{j}$是商品的属性(感觉对这两个变量没有说清楚, 不过注意它们是个向量).
+
+可以看到, 该模型去掉了用户矩阵$P$, 同时加入了一些新的参数, 相应的构造损失函数如下
+\begin{align*}
+\mathcal{L} & = \frac{1}{2} \sum_{u,i} e_{ui}^2 + \frac{1}{2} \lambda \sum_{j \in R(u)} ||x_{j}||^2 + \frac{1}{2} \lambda \sum_{j \in N(u)} ||y_{j}||^2 + \frac{1}{2} \lambda \sum_{i} ||q_i||^2 + \frac{1}{2} \lambda \sum_{u} b_{u}^2 + \frac{1}{2} \lambda \sum_{i} b_{i}^2 \\ 
+& = \frac{1}{2} \sum_{u,i} \left( r_{ui} - \mu - b_{u} - b_{i} - \sum_{m=1}^{F} z_{m} q_{mi} \right)^2 + \frac{1}{2} \lambda \sum_{j \in R(u)} ||x_j||^2 + \frac{1}{2} \lambda \sum_{j \in N(u)} ||y_j||^2  \\ 
+& \qquad + \frac{1}{2} \lambda \sum_{i} ||q_i||^2 + \frac{1}{2} \sum_{u} b_{u}^2 + \frac{1}{2} \lambda \sum_{i} b_{i}^2
+\end{align*}
+
+其中的向量$z$等于下式
+\begin{equation*}
+z = |R(u)|^{-\frac{1}{2}} \sum_{j \in R(u)} (r_{uj} - \mu - b_{u} - b_{j}) x_{j} + |N(u)|^{-\frac{1}{2}} \sum_{j \in N(u)} y_{j}
+\end{equation*}
+
+下面来求$q_{ik},x,y$的梯度下降更新式. 其实这里的$z$相当于前面的$p_{u}$, 因此可得$q_{ik}$的更新式如下
+\begin{equation*}
+q_{ki} := q_{ki} + \eta (e_{ui} z_{k} - \lambda q_{ik})
+\end{equation*}
+
+再来求$x_{j}$的偏导数, $\mathcal{L}$的第二项对$x_j$的导数很容易得到, 而第一项对$x_j$的导数为
+\begin{align*}
+\frac{\partial}{\partial x_{jk}} \left( \frac{1}{2} \sum_{u,i} e_{ui}^2 \right) & = \sum_{i,j \in R(u)} \left( e_{ui} \p{}{e_{ui}}{x_{jk}} \right) \\ 
+& = \sum_{i,j \in R(u)} \left( e_{ui} \frac{\partial}{\partial x_{jk}} \left(r_{ui} - \mu - b_{u} - b_{i} - \sum_{m=1}^{F} z_{m} q_{mi} \right) \right)
+\end{align*}
+
+上式中求和符号中的$i,j$都是属于$R(u)$的, 可以看到$z_m$只有当$m=k$时才与$x_{jk}$有关, 所以
+\begin{equation*}
+\frac{\partial}{\partial x_{jk}} \left(r_{ui} - \mu - b_{u} - b_{i} - \sum_{m=1}^{F} z_{m} q_{mi} \right) = - q_{ki} \p{}{z_k}{x_{jk}}
+\end{equation*}
+
+又因为
+\begin{equation*}
+z_{k} = |R(u)|^{-\frac{1}{2}} \sum_{j \in R(u)} (r_{uj} - \mu - b_{u} - b_{j}) x_{jk} + |N(u)|^{-\frac{1}{2}} \sum_{j \in N(u)} y_{jk}
+\end{equation*}
+
+所以
+\begin{equation*}
+\p{}{z_k}{x_{jk}} = |R(u)|^{-\frac{1}{2}} (r_{uj} - \mu - b_{u} - b_{j})
+\end{equation*}
+
+综上得到$\mathcal{L}$对$x_{jk}$的导数为
+\begin{equation*}
+\p{}{\mathcal{L}}{x_{jk}} = - \left( \sum_{j,i \in R(u)} \left( e_{ui} q_{ki} |R(u)|^{-\frac{1}{2}} (r_{uj} - \mu - b_{u} - b_{j}) \right) \right) + \lambda x_{jk}
+\end{equation*}
+
+同理可得$\mathcal{L}$对$y_{jk}$的导数为
+\begin{equation*}
+\p{}{\mathcal{L}}{y_{jk}} = - \left( \sum_{j \in N(u), i \in R(u)} \left( e_{ui} q_{ki} |N(u)|^{-\frac{1}{2}} \right) \right) + \lambda y_{jk}
+\end{equation*}
+
+这样就可以得到$x_{jk}$和$y_{jk}$的更新方程
+\begin{align*}
+x_{jk} & := x_{jk} + \eta \left[ \left( \sum_{j,i \in R(u)} \left( e_{ui} q_{ki} |R(u)|^{-\frac{1}{2}} (r_{uj} - \mu - b_{u} - b_{j}) \right) \right) - \lambda x_{jk} \right] \\ 
+y_{jk} & := y_{jk} + \eta \left[ \left( \sum_{j \in N(u), i \in R(u)} \left( e_{ui} q_{ki} |N(u)|^{-\frac{1}{2}} \right) \right) - \lambda y_{jk} \right]
+\end{align*}
+
+以上就是 ASVD 。。。。。。。
+
+关于矩阵分解模型的推广还有很多, 这里就不多做介绍了.
+
+
+
+
+
+
+
+
+
+
+\section{总结}
+\subsection{参考资料}
+\begin{enumerate}[(1)]
+\item 博客:\url{http://blog.csdn.net/zhongkejingwang/article/details/43083603}, 讲的很清楚, 还有详细的推导, 该人的其它博客有些也不错.
+
+\item 博客:\url{http://www.letiantian.me/2015-05-25-nmf-svd-recommend/}, 提到了隐语义模型, 并有 Python 代码解决问题的实例.
+
+\item 知乎的一个回答:\url{https://www.zhihu.com/question/26743347}, 非常直观的解释了潜在因子模型.
+
+
+\end{enumerate}
+
+
+
+
+
+
+
+
+\begin{thebibliography}{4}
+  \bibitem{1} 李荣华.\emph{偏微分方程数值解法}.高等教育出版社(2010) 
+  \bibitem{2} Zhilin Li,Zhonghua Qiao,Tao Tang.\emph{Numerical Solutions of Partial Differential Equations-An Introduction to Finite Difference and Finite Element Methods}.(2011)
+  \bibitem{3} 孙志忠.\emph{偏微分方程数值解法}.科学出版社(2011)
+  \bibitem{4} 陆金甫 关治.\emph{偏微分方程数值解法}.清华大学出版社(2004)
+  
+\end{thebibliography}
+
+\newpage
+
+\section*{附录}
+
+
+
+
+
+
+
+
+\end{document}

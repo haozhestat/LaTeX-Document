@@ -1,0 +1,12 @@
+\contentsline {section}{\numberline {1}引入}{3}{section.1}
+\contentsline {section}{\numberline {2}基本概念}{3}{section.2}
+\contentsline {section}{\numberline {3}关联规则算法}{5}{section.3}
+\contentsline {subsection}{\numberline {3.1}Apriori 算法}{5}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}FP-Growth 算法}{8}{subsection.3.2}
+\contentsline {subsubsection}{\numberline {3.2.1}构造 FP-Tree}{9}{subsubsection.3.2.1}
+\contentsline {subsubsection}{\numberline {3.2.2}利用FP-Tree挖掘频繁项集}{12}{subsubsection.3.2.2}
+\contentsline {section}{\numberline {4}对关联规则的补充}{15}{section.4}
+\contentsline {subsection}{\numberline {4.1}序列关联规则}{15}{subsection.4.1}
+\contentsline {subsection}{\numberline {4.2}约束关联规则}{16}{subsection.4.2}
+\contentsline {section}{\numberline {5}总结}{17}{section.5}
+\contentsline {subsection}{\numberline {5.1}参考资料}{17}{subsection.5.1}

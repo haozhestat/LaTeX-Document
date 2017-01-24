@@ -1,0 +1,11 @@
+\contentsline {section}{\numberline {1}引入}{3}{section.1}
+\contentsline {section}{\numberline {2}矩阵分解模型}{3}{section.2}
+\contentsline {subsection}{\numberline {2.1}SVD 基本模型}{3}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}潜在因子模型与非负矩阵分解}{3}{subsection.2.2}
+\contentsline {subsection}{\numberline {2.3}参数估计}{5}{subsection.2.3}
+\contentsline {subsection}{\numberline {2.4}正则化}{6}{subsection.2.4}
+\contentsline {section}{\numberline {3}矩阵分解模型的推广}{7}{section.3}
+\contentsline {subsection}{\numberline {3.1}RSVD 模型}{7}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}ASVD 模型}{8}{subsection.3.2}
+\contentsline {section}{\numberline {4}总结}{10}{section.4}
+\contentsline {subsection}{\numberline {4.1}参考资料}{10}{subsection.4.1}

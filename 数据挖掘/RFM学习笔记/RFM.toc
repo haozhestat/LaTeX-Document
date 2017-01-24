@@ -1,0 +1,9 @@
+\contentsline {section}{\numberline {1}引入}{3}{section.1}
+\contentsline {section}{\numberline {2}RFM 模型用于聚类}{3}{section.2}
+\contentsline {subsection}{\numberline {2.1}数据集}{3}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}RFM 模型聚类}{3}{subsection.2.2}
+\contentsline {section}{\numberline {3}关于RFM 模型的补充}{7}{section.3}
+\contentsline {subsection}{\numberline {3.1}层次分析法确定权重}{7}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}熵值法确定权重}{7}{subsection.3.2}
+\contentsline {section}{\numberline {4}总结}{8}{section.4}
+\contentsline {subsection}{\numberline {4.1}参考资料}{8}{subsection.4.1}

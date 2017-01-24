@@ -1,0 +1,409 @@
+%!TEX program = xelatex
+\documentclass[a4paper,UTF8]{ctexart}
+\usepackage[unicode=true,colorlinks,urlcolor=blue,linkcolor=blue,bookmarksnumbered=true]{hyperref}
+\usepackage{latexsym,amssymb,amsmath,amsbsy,amsopn,amstext,amsthm,amsxtra,color,multicol,bm,calc,ifpdf}
+\usepackage{graphicx}
+\usepackage{diagbox}   % 绘制表格斜线
+\usepackage{enumerate}
+\usepackage{epstopdf}
+\usepackage{fancyhdr}
+\usepackage{subfigure}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{makeidx}
+\usepackage{xcolor} 
+\usepackage{diagbox}
+\usepackage{fontspec}                            % 建立索引宏包
+\graphicspath{{figures/}}  % 设置图片搜索路径
+\theoremstyle{plain} \newtheorem{theorem}{定理}[section]
+\theoremstyle{plain} \newtheorem{definition}{定义}[section]
+\theoremstyle{plain} \newtheorem{lemma}{引理}[section]
+\theoremstyle{plain} \newtheorem{proposition}{命题}[section]
+\theoremstyle{plain} \newtheorem{example}{例}[section]
+\theoremstyle{plain} \newtheorem{remark}{注}[section]
+\theoremstyle{plain} \newtheorem{corollary}{推论}[section]
+\newfontfamily\courier{Courier New}
+\lstset{linewidth=1.1\textwidth,
+        numbers=left, %设置行号位置 
+        basicstyle=\small\courier,
+        numberstyle=\tiny\courier, %设置行号大小  
+        keywordstyle=\color{blue}\courier, %设置关键字颜色  
+        %identifierstyle=\bf，
+        commentstyle=\it\color[cmyk]{1,0,1,0}\courier, %设置注释颜色 
+        stringstyle=\it\color[RGB]{128,0,0}\courier,
+        %framexleftmargin=10mm,
+        frame=single, %设置边框格式  
+        backgroundcolor=\color[RGB]{245,245,244},
+        %escapeinside=``, %逃逸字符(1左面的键)，用于显示中文  
+        breaklines, %自动折行  
+        extendedchars=false, %解决代码跨页时，章节标题，页眉等汉字不显示的问题  
+        xleftmargin=2em,xrightmargin=2em, aboveskip=1em, %设置边距  
+        tabsize=4, %设置tab空格数  
+        showspaces=false %不显示空格  
+        basicstyle=\small\courier
+       }  
+\newenvironment{mysolution}{{\color{blue} 解}： }{{\color{magenta}\qed}}
+\newcommand\diff{\,{\mathrm d}} %定义微分d
+\newcommand{\p}[3]{\frac{\partial^{#1}#2}{\partial{#3}^{#1}}}  %定义求偏导算子
+\newcommand{\ucite}[1]{\textsuperscript{\cite{#1}}}  %参考文献引用：上标用\ucite{ }，文中用\cite{ }
+
+\begin{document}
+\title{
+\includegraphics[width=0.65\textwidth]{onepiece.pdf}\\
+\vspace{2em}
+\textbf{RFM 模型学习笔记}}
+\author{\emph{李向阳} \quad {\color{blue} d1142845997@gmail.com}
+}
+\date{}
+
+
+\maketitle
+\thispagestyle{empty}
+
+\newpage
+
+
+\tableofcontents
+
+\newpage
+
+\section{引入}
+这一次, 我们来谈谈 RFM 模型.
+
+我们知道机器学习中的算法大致可归为回归、分类、聚类、预测等等, 不过数据挖掘中的很多算法似乎难以归类. 勉强对应的说, RFM 模型是一种聚类的方法, 即将用户分为几类, 当然, RFM 模型不仅可用于聚类, 它的应用也很多.
+
+RFM 模型中的特征变量是固定的, 就是指如下$3$个变量
+\begin{itemize}
+\item Recency: 最近一次消费
+
+\item Frequency: 消费频率
+
+\item Monetary: 消费金额
+\end{itemize}
+
+也就是依照这$3$个变量, 我们来挖掘用户的信息并加以利用, 这样的模型便称为 RFM 模型.
+
+
+\section{RFM 模型用于聚类}
+我们来看最典型的例子, 即将 RFM 模型用于聚类. 
+
+\subsection{数据集}
+以超市购物为例, 我们的样本数据集的一部分可能如下表\ref{rawdata}, 当然, 这个完整的表是用 R 语言人工生成的.
+\begin{table}[!htb]
+\centering
+\caption{原始数据集}
+\label{rawdata}
+\begin{tabular}{ccc}
+	\hline
+    % after \: \hline or \cline{col1-col2} \cline{col3-col4} ...
+    \textbf{ID} & \textbf{Date} & \textbf{Amount} \\
+    \hline
+	4 & 1997-01-01 & 29.33 \\ 
+	\hline
+	4 & 1997-01-18 & 29.73 \\ 
+	\hline
+	4 & 1997-08-02 & 14.96 \\ 
+	\hline
+	4 & 1997-12-12 & 26.48 \\ 
+	\hline
+	21 & 1997-01-01 & 63.34 \\ 
+	\hline
+	21 & 1997-01-13 & 11.77 \\ 
+	\hline
+	50 & 1997-01-01 & 6.79 \\ 
+	\hline
+	71 & 1997-01-01 & 13.97 \\ 
+	\hline
+	86 & 1997-01-01 & 23.94 \\ 
+	\hline
+	111 & 1997-01-01 & 35.99 \\ 
+	\hline
+	111 & 1997-01-11 & 32.99 \\ 
+	\hline 
+	111 & 1997-03-15 & 77.96 \\ 
+	\hline
+	111 & 1997-06-23 & 91.92 \\ 
+	\hline
+	111 & 1997-07-22 & 47.08 \\ 
+	\hline 
+	111 & 1997-07-26 & 71.96 \\ 
+	\hline
+	111 & 1998-05-10 & 72.99 \\ 
+	\hline
+	111 & 1998-06-20 & 55.47 \\ 
+	\hline
+	112 & 1997-01-01 & 11.77 \\ 
+	\hline
+	112 & 1997-02-05 & 11.77 \\ 
+	\hline
+	113 & 1997-01-01 & 32.91 \\ 
+	\hline
+	113 & 1998-03-04 & 15.27 \\ 
+	\hline 
+	113 & 1998-03-07 & 11.49 \\ 
+	\hline
+	114 & 1997-01-01 & 16.36 \\ 
+	\hline
+	114 & 1997-05-01 & 28.13 \\
+	\hline
+\end{tabular}
+\end{table}
+
+其中的 ID 就是指顾客 ID, 相应的 Date 和 Amount 就是指该顾客当日的消费金额. 那么如何得到我们需要的$3$个变量呢? 
+
+其实就是选定一个当前时间, 比如 1998-07-01, 这样就可以计算变量 Recency, 也即每个顾客的最近一次消费了(按间隔的天数计算). 而计算变量 Frequency, 只要统计顾客购买了几次就可以了. 至于变量 Monetary, 我们一般用顾客平均每次的购买额来代替, 即用总的消费额除以消费次数. 经过如此计算后, 可以得到我们的数据集, 如下表\ref{data}.
+\begin{table}[!htb]
+\centering
+\caption{数据集}
+\label{data}
+\begin{tabular}{cccc}
+	\hline
+    % after \: \hline or \cline{col1-col2} \cline{col3-col4} ...
+    \textbf{ID} & \textbf{Recency} & \textbf{Frequency} & \textbf{Monetary} \\
+    \hline
+	4 & 201 & 4 & 25.125 \\ 
+	\hline
+	18 & 543 & 1 & 14.96 \\ 
+	\hline
+	21 & 534 & 2 & 37.555 \\ 
+	\hline
+	50 & 546 & 1 & 6.79 \\ 
+	\hline
+	60 & 515 & 1 & 21.75 \\ 
+	\hline
+	71 & 546 & 1 & 13.97 \\ 
+	\hline 
+	86 & 546 & 1 & 23.94 \\ 
+	\hline
+	111 & 11 & 16 & 69.19 \\ 
+	\hline 
+	112 & 511 & 2 & 11.77 \\ 
+	\hline 
+	113 & 116 & 3 & 19.89 \\ 
+	\hline 
+	114 & 140 & 5 & 24.986 \\ 
+	\hline 
+	131 & 546 & 1 & 30.32 \\ 
+	\hline
+	133 & 232 & 7 & 28.453 \\
+	\hline
+\end{tabular}
+\end{table}
+
+这样就得到 RFM 模型的数据集了.
+
+
+\subsection{RFM 模型聚类}
+得到数据集后, 我们需要对数据进行标准化处理, 并称为每个变量的得分. 这里有两种方式, 一种是把 R, F, M 都对应成评级 $1$ 到 $5$分, 另外一种是普通的标准化处理(当然, 数据标准化有很多种方法). 以最大最小标准化为例, 我们得到如下表\ref{scaledata}.
+\begin{table}[!htb]
+\centering
+\caption{标准化数据集}
+\label{scaledata}
+\begin{tabular}{cccc}
+	\hline
+    % after \: \hline or \cline{col1-col2} \cline{col3-col4} ...
+    \textbf{ID} & \textbf{Recency} & \textbf{Frequency} & \textbf{Monetary} \\
+    \hline
+	4 & 0.633 & 0.055 & 0.05 \\ 
+	\hline
+	18 & 0.006 & 0 & 0.03 \\ 
+	\hline
+	21 & 0.022 & 0.018 & 0.074 \\ 
+	\hline
+	50 & 0 & 0 & 0.013 \\ 
+	\hline
+	60 & 0.057 & 0 & 0.043 \\ 
+	\hline
+	71 & 0 & 0 & 0.028 \\ 
+	\hline
+	86 & 0 & 0 & 0.047 \\ 
+	\hline
+	111 & 0.982 & 0.273 & 0.136 \\ 
+	\hline
+	112 & 0.064 & 0.018 & 0.023 \\ 
+	\hline
+	113 & 0.789 & 0.036 & 0.039 \\ 
+	\hline
+	114 & 0.745 & 0.073 & 0.049 \\ 
+	\hline
+\end{tabular}
+\end{table}
+
+
+数据标准化后, 我们需要计算每个顾客的加权总得分, 这里的权值怎么确定呢? 网上主要也有两种方式, 一种是把 R, F, M 的权重分别赋为 100, 10, 和 1, 而且这种处理方法通常和标准化时评级成 $1$ 到 $5$分相结合, 这样, 若一个顾客得了$542$分, 说明他的 Recency 得了5分, Frequency 得了4分, Monetary 得了2分. 另外一种是采用层次分析法得到这三个变量的权重(我会在下面的补充中给一个简单例子),  而且这种处理方法通常和标准化时普通的标准化相结合.
+
+除此之外, 也可以采用熵值法来确定每个指标的权重, 然后算加权总得分, 比如我们最终算得 R、F、M的权重分别为$0.3, 0.1, 0.6$, 那么可以算出每个用户的总得分如下表\ref{totalscale}(用得分矩阵乘以权重向量即可).
+\begin{table}[!htb]
+\centering
+\caption{用户总得分}
+\label{totalscale}
+\begin{tabular}{ccccc}
+	\hline
+    % after \: \hline or \cline{col1-col2} \cline{col3-col4} ...
+    \textbf{ID} & \textbf{Recency} & \textbf{Frequency} & \textbf{Monetary} & \textbf{TotalScore} \\
+    \hline
+	4 & 0.633 & 0.055 & 0.05 & 0.2254 \\ 
+	\hline
+	18 & 0.006 & 0 & 0.03 & 0.0198 \\ 
+	\hline
+	21 & 0.022 & 0.018 & 0.074 & 0.0528 \\ 
+	\hline
+	50 & 0 & 0 & 0.013 & 0.0078 \\ 
+	\hline
+	60 & 0.057 & 0 & 0.043 & 0.0429 \\ 
+	\hline
+	71 & 0 & 0 & 0.028 & 0.0168 \\ 
+	\hline
+	86 & 0 & 0 & 0.047 & 0.0282 \\ 
+	\hline
+	111 & 0.982 & 0.273 & 0.136 & 0.4035 \\ 
+	\hline
+	112 & 0.064 & 0.018 & 0.023 & 0.0348 \\ 
+	\hline
+	113 & 0.789 & 0.036 & 0.039 & 0.2637 \\ 
+	\hline
+	114 & 0.745 & 0.073 & 0.049 & 0.2602 \\ 
+	\hline
+\end{tabular}
+\end{table}
+
+
+顾客的总得分越高, 说明这个顾客对我们来说越重要. 除此之外, 我们还可以计算出总的 Recency, Frequency, Monetary 的均值, 然后对每个顾客依照这三个变量的得分对顾客进行分类. 依照均值比较的方法可以分出$8$类(因为每个分值要么高于均值, 要么低于均值), 如下表\ref{categ}
+\begin{table}[!htb]
+\centering
+\caption{分类表}
+\label{categ}
+\begin{tabular}{ccccc}
+	\hline
+    % after \: \hline or \cline{col1-col2} \cline{col3-col4} ...
+    \textbf{Rank} & \textbf{Recency} & \textbf{Frequency} & \textbf{Monetary} & \textbf{客户类型}  \\
+    \hline
+	1 & 高于均值 & 高于均值 & 高于均值 & 最有价值客户 \\ 
+	\hline
+	2 & 高于均值 & 低于均值 & 高于均值 & 重要发展客户 \\ 
+	\hline
+	3 & 低于均值 & 高于均值 & 高于均值 & 重要保持客户 \\ 
+	\hline
+	4 & 低于均值 & 低于均值 & 高于均值 & 重要挽留客户 \\ 
+	\hline
+	5 & 高于均值 & 高于均值 & 低于均值 & 一般价值客户 \\ 
+	\hline
+	6 & 高于均值 & 低于均值 & 低于均值 & 一般发展客户 \\ 
+	\hline
+	7 & 低于均值 & 高于均值 & 低于均值 & 一般保持客户 \\ 
+	\hline
+	8 & 低于均值 & 低于均值 & 低于均值 & 一般挽留客户 \\
+	\hline
+\end{tabular}
+\end{table}
+
+不过有时人们并不想这样简单的分为$8$类, 毕竟每个行业是不太一样的. 因此, 对顾客分类还有很多其他方法, 基本上归为两类. 一类方法是 Nested, 也就是对这$3$个变量逐个分类, 比如先依照变量 Recency 分类, 把 Recency 划分为 0-120, 120-240, 240-450, 450-500 和 500 以上. 接下来对每个大类再按照剩下的两个变量进行分类, 切割的区间也可适当划分. 另一类方法是 Independent, 即独立的在每个维度上进行分类.
+
+
+
+
+
+
+\section{关于RFM 模型的补充}
+\subsection{层次分析法确定权重}
+前面提到, 变量权重的确定可以采用层次分析法. 关于层次分析法, 可参见韩中庚的《数学建模方法及应用》. 其实就是求评价矩阵最大特征值对应的特征向量, 然后再归一化即可. 近似计算时, 可以采用和法(可参考其它文献), 以 \url{http://wiki.mbalib.com/wiki/RFM%E6%A8%A1%E5%9E%8B} 的评价矩阵为例, 代码如下
+\begin{lstlisting}[language=r]
+b <- matrix(c(1, 0.71, 0.46, 1.41, 1, 0.85, 2.18, 1.18, 1), ncol = 3, nrow = 3, byrow = T)
+
+f <- function(x) {
+    x / sum(x)
+}
+
+b <- apply(b, 2, f)
+
+x <- apply(b, 1, sum)
+w <- f(x)
+\end{lstlisting}
+
+以上计算$w$的结果即为$(0.221, 0.341, 0.439)^{T}$.
+
+
+\subsection{熵值法确定权重}
+我们知道熵可以衡量一组数据分布的离散情况. 那么如何将它运用到变量权重的确定上呢?
+
+我们以 F 和 M 值为例, 显然 F 的值分布的估计是比较均匀的, 而 M 的值一般差异较大, 因此计算出来的熵肯定也会更大, 但是我们看的是指标的重要程度, 因此可以用$1$减去熵值作为权重. 具体应用到 RFM 模型中, 我们来说明一下计算方法.
+
+首先对数据进行标准化处理. 本模型的样本数据矩阵为$X = (x_{ij})_{m \times n}$, 其中假设有$m$个样本, 有$n = 3$个变量, 示例可见表\ref{data}.
+比如进行最大最小标准化, 由于 F, M 是正向指标(即越大表现越好), 因此标准化公式为
+\begin{equation*}
+x_{ij}^{*} = \frac{x_{ij} - \min \{x_j\}}{\max \{x_j\} - \max \{x_j\}}
+\end{equation*}
+
+而 F 是负向指标(即越小表现越好), 因此标准化公式为
+\begin{equation*}
+x_{ij}^{*} = \frac{\max \{x_j\} - x_{ij}}{\max \{x_j\} - \max \{x_j\}}
+\end{equation*}
+
+接着计算
+\begin{equation*}
+y_{ij} = \frac{x_{ij}^{*}}{\sum\limits_{i=1}^{m} x_{ij}^{*}}
+\end{equation*}
+
+然后计算变量的信息熵
+\begin{equation*}
+e_{j} = \frac{1}{\ln m} \sum_{i=1}^{m} y_{ij} \ln y_{ij}
+\end{equation*}
+
+注意当$y_{ij} = 0$时, 可以规定$\ln y_{ij} = 0$, 这个我们在讲决策树计算熵时也遇到过.
+
+最后计算各个变量的信息熵冗余度并得到权重
+\begin{equation*}
+d_{j} = 1 - e_{j}, w_{j} = \frac{d_{j}}{\sum\limits_{j=1}^{n} d_{j}}
+\end{equation*}
+
+
+
+\section{总结}
+\subsection{参考资料}
+\begin{enumerate}[(1)]
+\item MBA 智库百科: \url{http://wiki.mbalib.com/wiki/RFM%E6%A8%A1%E5%9E%8B}
+
+\item 博客: \url{http://ljy.logdown.com/posts/2014/12/27/rfm-analysis-using-r}, 用 R 语言生成数据并进行了简单分析.
+
+\item 博客: \url{http://www.dataapple.net/?p=84}, 比较完整的介绍, 基于 R 语言, 也有数据集.
+
+\item 博客: \url{http://www.marketingdistillery.com/2014/11/02/rfm-customer-segmentation-in-r-pandas-and-apache-spark/}, 不仅有 R, 还有 Python 和 Spark 的数据处理.
+\end{enumerate}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\begin{thebibliography}{4}
+  \bibitem{1} 李荣华.\emph{偏微分方程数值解法}.高等教育出版社(2010) 
+  \bibitem{2} Zhilin Li,Zhonghua Qiao,Tao Tang.\emph{Numerical Solutions of Partial Differential Equations-An Introduction to Finite Difference and Finite Element Methods}.(2011)
+  \bibitem{3} 孙志忠.\emph{偏微分方程数值解法}.科学出版社(2011)
+  \bibitem{4} 陆金甫 关治.\emph{偏微分方程数值解法}.清华大学出版社(2004)
+  
+\end{thebibliography}
+
+\newpage
+
+\section*{附录}
+
+
+
+
+
+
+
+
+\end{document}
