@@ -1,0 +1,6 @@
+\contentsline {section}{\numberline {1}写在前面}{3}{section.1}
+\contentsline {section}{\numberline {2}基本概念}{4}{section.2}
+\contentsline {subsection}{\numberline {2.1}关于记号}{4}{subsection.2.1}
+\contentsline {section}{\numberline {3}关于统计与机器学习}{6}{section.3}
+\contentsline {section}{\numberline {4}推荐参考资料}{7}{section.4}
+\contentsline {section}{\numberline {5}总结}{8}{section.5}
